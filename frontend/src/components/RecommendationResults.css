@@ -1,0 +1,263 @@
+.recommendations-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.recommendations-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 8px 24px rgba(245, 87, 108, 0.3);
+    color: white;
+}
+
+.recommendations-card h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.recommendation-form {
+    margin-top: 1.5rem;
+}
+
+.recommendation-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.recommendation-form .url-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.recommendation-form .url-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.recommendation-form .url-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.recommendation-form .url-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.get-recommendations-btn,
+.reset-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.get-recommendations-btn:hover:not(:disabled),
+.reset-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+.get-recommendations-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error-message {
+    background-color: rgba(239, 68, 68, 0.2);
+    border-left: 4px solid #ef4444;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+}
+
+.recommendations-result {
+    margin-top: 1.5rem;
+}
+
+.input-section {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.input-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+}
+
+.product-info {
+    margin: 0;
+}
+
+.product-info p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+}
+
+.product-info a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.product-info a:hover {
+    text-decoration: underline;
+}
+
+.suggestions-section {
+    margin-top: 1.5rem;
+}
+
+.suggestions-section h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.1rem;
+}
+
+.category-group {
+    margin-bottom: 2rem;
+    background-color: rgba(255, 255, 255, 0.08);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.product-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.product-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+    min-height: 2.8rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-meta {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+}
+
+.price {
+    font-weight: 600;
+    display: block;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 0.25rem;
+}
+
+.rating {
+    font-weight: 500;
+}
+
+.reviews {
+    opacity: 0.8;
+    margin-left: 0.25rem;
+}
+
+.product-link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    color: white;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.product-link:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.no-suggestions {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
+    padding: 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .recommendations-card {
+        padding: 1.5rem;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .category-group {
+        padding: 1rem;
+    }
+
+    .product-card {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendations-card h2 {
+        font-size: 1.5rem;
+    }
+}
