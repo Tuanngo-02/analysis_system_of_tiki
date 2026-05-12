@@ -8,3 +8,13 @@ numpy
 matplotlib
 scikit-learn
 matplotlib
+
+
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+beautifulsoup4
+gensim
+transformers
+rank_bm25
