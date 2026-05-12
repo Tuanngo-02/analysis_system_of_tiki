@@ -1,347 +1,275 @@
-# 📊 Product Review Analysis - Hướng dẫn Chạy Dự Án
+# 📊 Smart Analytics System
 
-## 📋 Mục lục
+## Hệ Thống Phân Tích Cảm Xúc và Gợi Ý Sản Phẩm
 
-1. [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
-2. [Cài đặt](#cài-đặt)
-3. [Chạy ứng dụng](#chạy-ứng-dụng)
-4. [Đăng nhập](#đăng-nhập)
-5. [Hướng dẫn sử dụng](#hướng-dẫn-sử-dụng)
-6. [Deploy](#deploy)
-7. [Troubleshooting](#troubleshooting)
+Một ứng dụng web full-stack với các chức năng phân tích cảm xúc từ đánh giá sản phẩm và gợi ý sản phẩm tương tự. Hệ thống hỗ trợ hai vai trò: Admin (quản lý người dùng) và User (sử dụng tính năng phân tích).
 
 ---
 
-## 🔧 Yêu cầu hệ thống
+## 🚀 Các Tính Năng Chính
 
-- **Python**: 3.8 hoặc cao hơn
-- **OS**: Windows, macOS, hoặc Linux
-- **RAM**: Tối thiểu 2GB
-- **Dung lượng**: ~500MB (bao gồm dependencies)
+### ✨ Cho Người Dùng (User)
+- **📊 Phân Tích Cảm Xúc**: Phân tích cảm xúc từ đánh giá sản phẩm (Positive/Negative/Neutral)
+- **🎯 Gợi Ý Sản Phẩm**: Nhận gợi ý các sản phẩm tương tự dựa trên phân loại
+- **👤 Quản Lý Tài Khoản**: Đăng nhập, đăng ký tài khoản
+- **📈 Dashboard**: Xem thống kê sử dụng
 
-Kiểm tra phiên bản Python:
-```bash
-python --version
-```
+### ⚙️ Cho Quản Trị Viên (Admin)
+- **👥 Quản Lý Người Dùng**: Thêm, xóa, kích hoạt/vô hiệu người dùng
+- **📊 Thống Kê Hệ Thống**: Xem tổng quan các chỉ số quan trọng
+- **🔐 Quản Lý Quyền**: Phân quyền giữa Admin và User
+- **ℹ️ Thông Tin Hệ Thống**: Xem trang thái hoạt động của hệ thống
 
 ---
 
-## ⚙️ Cài đặt
+## 📋 Yêu Cầu Hệ Thống
 
-### 1️⃣ Clone hoặc Download Project
+- Python 3.8+
+- Node.js 14+ (cho frontend)
+- npm hoặc yarn
 
+---
+
+## ⚙️ Cài Đặt và Chạy
+
+## 🎯 Chạy Ứng Dụng
+## Tạo env
 ```bash
-# Nếu dùng Git
-git clone <repository-url>
-cd Scratch_review
-
-# Hoặc download ZIP và giải nén
-cd Scratch_review
-```
-
-### 2️⃣ Tạo Virtual Environment
-
-#### **Trên Windows:**
-```bash
-python -m venv env
-
-# Kích hoạt virtual environment
-env\Scripts\activate
-```
-
-#### **Trên macOS/Linux:**
-```bash
-python3 -m venv env
-
-# Kích hoạt virtual environment
-source env/bin/activate
-```
-
-### 3️⃣ Cài đặt Dependencies
-
-```bash
-# Nâng cấp pip
-pip install --upgrade pip
-
-# Cài đặt các package
 pip install -r requirements.txt
 ```
-
-**Nội dung requirements.txt:**
-```
-streamlit
-tensorflow==2.20.0
-keras==3.13.2
-underthesea
-pandas
-numpy
-matplotlib
-scikit-learn
-```
-
-✅ Quá trình cài đặt sẽ mất khoảng 5-10 phút
-
----
-
-## 🚀 Chạy Ứng Dụng
-
-### Cách 1: Command Line (Đơn giản nhất)
+### Terminal 1 - Backend
 
 ```bash
-# Đảm bảo virtual environment đã kích hoạt
-streamlit run app.py
+cd backend
+.\dev
 ```
 
-App sẽ tự động mở ở: **http://localhost:8501**
-
-### Cách 2: Chỉ định Port Tùy chỉnh
-
-```bash
-streamlit run app.py --server.port 8080
+✅ Khi thấy dòng này, backend đã chạy:
+```
+INFO:     Application startup complete
+INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
-### Cách 3: Tắt Port Validation
+### Terminal 2 - Frontend
 
 ```bash
-streamlit run app.py --server.enableCORS false
+cd frontend
+npm install
+npm run dev
+```
+
+✅ Khi thấy dòng này, frontend đã chạy:
+```
+VITE v8.0.10  ready in XXX ms
+
+➜  Local:   http://localhost:5173/
 ```
 
 ---
 
-## 🔐 Đăng nhập
+## 🔐 Tài Khoản Mặc Định
 
-### Tài Khoản Demo
+Khi lần đầu chạy, hệ thống sẽ tự động tạo tài khoản admin:
 
-| Role | Username | Password |
-|------|----------|----------|
-| 👑 Admin | `admin` | `admin123` |
-| 👤 User | `user1` | `user123` |
-| 👤 User | `user2` | `user123` |
+**Admin Account:**
+- **Username**: `admin`
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
+- **Role**: Admin
 
----
+**Để tạo tài khoản Admin thủ công** (nếu cần):
 
-## 📱 Hướng dẫn Sử Dụng
-
-### 👑 Giao diện Admin
-
-**Chức năng:**
-- 📊 Xem tổng quan (tổng sản phẩm, reviews, positive/negative)
-- 📋 Danh sách sản phẩm với thông tin đầy đủ
-- 🔍 Tìm kiếm theo:
-  - Product ID
-  - Product Name
-  - Category
-- 📊 Sắp xếp theo bất kỳ cột nào (tăng/giảm)
-- 📈 Biểu đồ Sentiment tổng thể
-- 📊 Top 10 sản phẩm có điểm cao nhất
-- 🔍 Xem chi tiết từng sản phẩm
-
-### 👤 Giao diện User
-
-**Tính năng:**
-1. **Phân tích sản phẩm**
-   - Nhập Product ID
-   - Xem thống kê Positive/Negative %
-   - Xem biểu đồ Pie chart
-   - Danh sách toàn bộ reviews
-
-2. **So sánh sản phẩm**
-   - Nhập 2 Product ID
-   - Metrics so sánh song song
-   - Biểu đồ Pie đôi
-   - Biểu đồ cột so sánh
-   - Kết luận tự động
-   - Tab reviews riêng cho từng sản phẩm
-
----
-
-## 🌐 Deploy
-
-### Option 1: Streamlit Cloud (⭐ Khuyên dùng)
-
-**Bước 1:** Tạo GitHub Repository
-
+1. Mở Python shell trong thư mục backend:
 ```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/streamlit_app.git
-git push -u origin main
+python
 ```
 
-**Bước 2:** Deploy trên Streamlit Cloud
+2. Chạy các lệnh sau:
+```python
+from app.core.database import SessionLocal, Base, engine
+from app.model.user_model import User
+from app.services.auth_service import hash_password
 
-1. Truy cập: https://share.streamlit.io
-2. Đăng nhập bằng GitHub
-3. Click "New app"
-4. Chọn repository và `app.py`
-5. Chờ deploy (2-5 phút)
+# Tạo tables
+Base.metadata.create_all(bind=engine)
 
-✅ App sẽ có URL: `https://your-app-name.streamlit.app`
+# Tạo session
+db = SessionLocal()
 
-### Option 2: Docker + Render/Railway
-
-**Dockerfile:**
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8501
-
-CMD streamlit run app.py --server.port=8501 --server.address=0.0.0.0
-```
-
-**Deploy:**
-```bash
-# Push lên GitHub
-git push origin main
-
-# Truy cập Render.com hoặc Railway.app
-# Kết nối với GitHub repo
-# Deploy!
-```
-
-### Option 3: Heroku
-
-```bash
-heroku login
-heroku create your-app-name
-git push heroku main
+# Tạo admin user
+admin_user = User(
+    username="admin",
+    email="admin@example.com",
+    hashed_password=hash_password("admin123"),
+    role="admin"
+)
+db.add(admin_user)
+db.commit()
+print("Admin user created successfully!")
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## 📱 Hướng Dẫn Sử Dụng
 
-### ❌ Lỗi: "ModuleNotFoundError"
+### Cho Người Dùng (User)
 
-**Giải pháp:**
-```bash
-# Kiểm tra virtual environment đã kích hoạt
-which python  # macOS/Linux
-where python  # Windows
+1. **Đăng Ký Tài Khoản**
+   - Nhấp vào "Đăng ký ngay" trên trang login
+   - Nhập username, email, và password
+   - Xác nhận mật khẩu
+   - Nhấp "Đăng Ký"
 
-# Cài lại dependencies
-pip install -r requirements.txt
+2. **Đăng Nhập**
+   - Nhập username và password
+   - Nhấp "Đăng Nhập"
+
+3. **Phân Tích Cảm Xúc**
+   - Chọn "Sentiment" từ menu
+   - Nhập URL sản phẩm (Tiki/Shopee)
+   - Nhấp "Phân Tích"
+   - Xem kết quả: cảm xúc, độ tin cậy, số đánh giá, rating
+
+4. **Gợi Ý Sản Phẩm**
+   - Chọn "Recommend" từ menu
+   - Nhập URL sản phẩm
+   - Nhấp "Tìm Gợi Ý"
+   - Xem danh sách sản phẩm được gợi ý
+
+### Cho Quản Trị Viên (Admin)
+
+1. **Đăng Nhập Admin**
+   - Đăng nhập với tài khoản admin
+   - Tự động chuyển đến Admin Panel
+
+2. **Quản Lý Người Dùng**
+   - Xem danh sách tất cả người dùng
+   - Thêm người dùng mới: Nhấp "Thêm Người Dùng"
+   - Vô hiệu/Kích hoạt người dùng: Nhấp biểu tượng 🔒/🔓
+   - Xóa người dùng: Nhấp biểu tượng 🗑️
+
+3. **Xem Thống Kê**
+   - Tổng người dùng
+   - Người dùng hoạt động
+   - Tổng phân tích
+   - Trạng thái hệ thống
+
+---
+
+## 🗄️ Cấu Trúc Cơ Sở Dữ Liệu
+
+### Bảng Users
 ```
-
-### ❌ Lỗi: "Port 8501 đang bị sử dụng"
-
-**Giải pháp:**
-```bash
-# Dùng port khác
-streamlit run app.py --server.port 8502
-
-# Hoặc kill process
-# Windows:
-netstat -ano | findstr :8501
-taskkill /PID <PID> /F
-
-# macOS/Linux:
-lsof -i :8501
-kill -9 <PID>
-```
-
-### ❌ Lỗi: "reviews_with_sentiment.csv not found"
-
-**Giải pháp:**
-```bash
-# Đảm bảo file CSV nằm cùng folder app.py
-# Hoặc chỉ đường dẫn tuyệt đối trong code:
-df = pd.read_csv("D:/Scratch_review/reviews_with_sentiment.csv")
-```
-
-### ❌ Lỗi: "tensorflow/keras import error"
-
-**Giải pháp:**
-```bash
-# Cài lại
-pip uninstall tensorflow keras -y
-pip install tensorflow==2.20.0 keras==3.13.2
-```
-
-### ⚠️ App chạy chậm
-
-**Giải pháp:**
-```bash
-# Xóa cache
-streamlit cache clear
-
-# Hoặc restart
-streamlit run app.py --logger.level=debug
+- id: Integer (Primary Key)
+- username: String (Unique)
+- email: String (Unique)
+- hashed_password: String
+- role: String (admin/user)
+- is_active: Boolean
+- created_at: DateTime
 ```
 
 ---
 
-## 📝 Cấu trúc Project
+## 🔌 API Endpoints
 
-```
-Scratch_review/
-├── app.py                          # Main app file
-├── reviews_with_sentiment.csv      # Dataset
-├── bilstm_sentiment.h5             # Model (optional)
-├── bilstm_sentiment.keras          # Model (optional)
-├── requirements.txt                # Dependencies
-├── README.md                       # Hướng dẫn này
-└── env/                            # Virtual environment
-    ├── bin/
-    ├── lib/
-    └── pyvenv.cfg
-```
+### Authentication
+- `POST /api/auth/register` - Đăng ký tài khoản
+- `POST /api/auth/login` - Đăng nhập
+
+### Features
+- `POST /api/sentiment` - Phân tích cảm xúc
+- `POST /api/recommend` - Gợi ý sản phẩm
 
 ---
 
-## ✨ Các Tính Năng Chính
+## 🛠️ Công Nghệ Sử Dụng
 
-### 🎨 UI/UX
-- ✅ Thiết kế hiện đại với gradient colors
-- ✅ Loading spinner cho mọi thao tác
-- ✅ Toast notifications (thông báo trạng thái)
-- ✅ Responsive design
+### Backend
+- **FastAPI**: Framework web hiệu suất cao
+- **SQLAlchemy**: ORM cho database
+- **Pydantic**: Validation dữ liệu
+- **Passlib + Bcrypt**: Mã hóa mật khẩu
+- **PyJWT**: JWT token authentication
+- **SQLite**: Database nhẹ
 
-### 🔐 Security
-- ✅ Login/Logout system
-- ✅ Role-based access (Admin/User)
-- ✅ Session management
+### Frontend
+- **React 19**: UI library
+- **React Router DOM**: Navigation
+- **CSS**: Styling
 
-### 📊 Features
-- ✅ Phân tích sentiment sản phẩm
-- ✅ So sánh hai sản phẩm
-- ✅ Tìm kiếm & lọc nâng cao
-- ✅ Sắp xếp linh hoạt
-- ✅ Biểu đồ trực quan
+---
+
+## 📊 Dữ Liệu Mẫu
+
+Sau khi tạo tài khoản Admin, bạn có thể:
+
+1. **Đăng nhập bằng Admin** để truy cập Admin Panel
+2. **Tạo tài khoản User mới** thông qua:
+   - Admin Panel > Thêm Người Dùng
+   - Hoặc tự đăng ký trên trang Register
+
+3. **Thử nghiệm các tính năng**:
+   - Phân tích cảm xúc: Sử dụng URL sản phẩm thực từ Tiki/Shopee
+   - Gợi ý sản phẩm: Nhập URL sản phẩm để nhận gợi ý
+
+---
+
+## ⚠️ Lưu Ý Quan Trọng
+
+1. **Database**: Ứng dụng sử dụng SQLite (`app.db`), tự động tạo khi chạy lần đầu
+2. **CORS**: Đã bật cho phép frontend gọi API từ localhost
+3. **Token**: Access token hết hạn sau 30 phút
+4. **Password**: Tối thiểu 6 ký tự khi đăng ký
+
+---
+
+## 🐛 Khắc Phục Sự Cố
+
+### Backend không chạy
+```bash
+# Kiểm tra port 8000 có bị chiếm không
+# Hoặc chạy trên port khác:
+python -m uvicorn app.main:app --reload --port 8001
+```
+
+### Frontend không kết nối được backend
+- Kiểm tra URL backend trong `src/services/api.js`
+- Đảm bảo backend đang chạy tại `http://localhost:8000`
+
+### Database bị lỗi
+```bash
+# Xóa file database và chạy lại
+rm backend/app.db
+python -m uvicorn app.main:app --reload
+```
 
 ---
 
 ## 📞 Hỗ Trợ
 
-Nếu gặp vấn đề:
-
-1. Kiểm tra Internet connection
-2. Xóa cache: `streamlit cache clear`
-3. Restart app: `Ctrl+C` rồi chạy lại
-4. Cập nhật packages: `pip install -r requirements.txt --upgrade`
-5. Báo cáo issue trên GitHub
+Nếu gặp vấn đề, vui lòng:
+1. Kiểm tra logs trong terminal
+2. Xem API docs tại `http://localhost:8000/docs`
+3. Kiểm tra Network tab trong browser developer tools
 
 ---
 
 ## 📄 License
 
-MIT License - Tự do sử dụng cho mục đích học tập và thương mại
+MIT License - Tự do sử dụng cho mục đích cá nhân và thương mại
 
 ---
 
-## 🎓 Tác giả
+## 🎯 Phát Triển Tiếp Theo
 
-**Ứng dụng Phân tích Review Sản phẩm** - Product Review Analysis System
+- [ ] Lưu trữ lịch sử phân tích
+- [ ] Export kết quả thành PDF
+- [ ] Biểu đồ thống kê chi tiết
+- [ ] Gợi ý sản phẩm thông minh hơn
+- [ ] Multi-language support
+- [ ] Mobile app version
 
 ---
 
-**🌟 Chúc bạn sử dụng vui vẻ!** 🌟
+**Được tạo với ❤️ bằng React, FastAPI, và SQLAlchemy**
