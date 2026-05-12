@@ -18,3 +18,4 @@ beautifulsoup4
 gensim
 transformers
 rank_bm25
+rasa
