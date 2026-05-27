@@ -21,6 +21,14 @@ export function DashboardPage({ user }) {
       path: "/recommend",
       color: "#e74c3c",
     },
+    {
+      id: 3,
+      title: "So Sanh San Pham",
+      description: "Nhap 2 link Tiki de tao API lay du lieu so sanh",
+      icon: "SS",
+      path: "/compare",
+      color: "#16a34a",
+    },
   ];
 
   return (

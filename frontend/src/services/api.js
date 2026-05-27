@@ -113,4 +113,45 @@ export const apiService = {
             throw error;
         }
     },
+
+    async getCompareProductApis(productUrl1, productUrl2) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/compare/product-apis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_url: productUrl1,
+                    product_url_2: productUrl2,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Compare product API error:', error);
+            throw error;
+        }
+    },
+
+    async getCompareResult() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/compare/result`);
+     
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Compare result error:', error);
+            throw error;
+        }
+    },
 };
