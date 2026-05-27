@@ -32,6 +32,7 @@ export function Header({ user, onLogout }) {
                   <a href="/dashboard">Dashboard</a>
                   <a href="/sentiment">Sentiment</a>
                   <a href="/recommend">Recommend</a>
+                  <a href="/compare">Compare</a>
                 </>
               )}
             </div>
