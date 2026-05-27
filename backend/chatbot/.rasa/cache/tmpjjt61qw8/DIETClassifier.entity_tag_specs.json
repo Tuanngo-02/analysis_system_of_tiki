@@ -1,0 +1,52 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-cau_hinh",
+      "2": "I-cau_hinh",
+      "3": "L-cau_hinh",
+      "4": "U-cau_hinh",
+      "5": "B-gia_toi_da",
+      "6": "I-gia_toi_da",
+      "7": "L-gia_toi_da",
+      "8": "U-gia_toi_da",
+      "9": "B-gia_toi_thieu",
+      "10": "I-gia_toi_thieu",
+      "11": "L-gia_toi_thieu",
+      "12": "U-gia_toi_thieu",
+      "13": "B-loai_san_pham",
+      "14": "I-loai_san_pham",
+      "15": "L-loai_san_pham",
+      "16": "U-loai_san_pham",
+      "17": "B-thuong_hieu",
+      "18": "I-thuong_hieu",
+      "19": "L-thuong_hieu",
+      "20": "U-thuong_hieu",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-cau_hinh": 1,
+      "I-cau_hinh": 2,
+      "L-cau_hinh": 3,
+      "U-cau_hinh": 4,
+      "B-gia_toi_da": 5,
+      "I-gia_toi_da": 6,
+      "L-gia_toi_da": 7,
+      "U-gia_toi_da": 8,
+      "B-gia_toi_thieu": 9,
+      "I-gia_toi_thieu": 10,
+      "L-gia_toi_thieu": 11,
+      "U-gia_toi_thieu": 12,
+      "B-loai_san_pham": 13,
+      "I-loai_san_pham": 14,
+      "L-loai_san_pham": 15,
+      "U-loai_san_pham": 16,
+      "B-thuong_hieu": 17,
+      "I-thuong_hieu": 18,
+      "L-thuong_hieu": 19,
+      "U-thuong_hieu": 20,
+      "O": 0
+    },
+    "num_tags": 21
+  }
+]

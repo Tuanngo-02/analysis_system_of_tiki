@@ -1,0 +1,42 @@
+recipe: default.v1
+assistant_id: tiki_product_consultant
+
+# Tiếng Việt không cần stemmer riêng trong Rasa; whitespace + char n-gram giúp
+# DIET học tốt các biến thể như "500k", "15 triệu", "điện thoại samsung".
+language: vi
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+    lowercase: true
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 2
+    max_ngram: 5
+  # CRF bắt entity dạng chuỗi liên tiếp tốt, hữu ích cho brand/cấu hình/loại sản phẩm.
+  - name: CRFEntityExtractor
+    features:
+      - ["low", "title", "upper", "digit", "prefix5", "suffix5", "pattern"]
+      - ["low", "title", "upper", "digit", "prefix5", "suffix5", "pattern"]
+      - ["low", "title", "upper", "digit", "prefix5", "suffix5", "pattern"]
+  # DIET học intent và entity từ ví dụ NLU; entity vẫn được action kiểm tra lại bằng parser giá.
+  - name: DIETClassifier
+    epochs: 120
+    constrain_similarities: true
+  - name: EntitySynonymMapper
+  - name: FallbackClassifier
+    threshold: 0.35
+    ambiguity_threshold: 0.1
+
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy
+    core_fallback_threshold: 0.3
+    core_fallback_action_name: "utter_default"
+    enable_fallback_prediction: true
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 80
+    constrain_similarities: true

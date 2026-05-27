@@ -17,5 +17,7 @@ pydantic
 beautifulsoup4
 gensim
 transformers
+sentence-transformers
+faiss-cpu
 rank_bm25
 rasa

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Header } from "./components/Header";
+import { ChatWidget } from "./components/ChatWidget";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -115,6 +116,7 @@ function App() {
             />
           </Routes>
         </main>
+        {user && <ChatWidget user={user} />}
       </div>
     </Router>
   );

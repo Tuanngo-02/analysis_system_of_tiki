@@ -1,0 +1,10 @@
+[
+  {
+    "name": "loai_san_pham",
+    "pattern": "(\\bđiện\\ thoại\\b|\\bsmartphone\\b|\\biphone\\b|\\bmáy\\ tính\\ bảng\\b|\\btablet\\b|\\bipad\\b|\\bchuột\\b|\\bmouse\\b|\\bbàn\\ phím\\b|\\bkeyboard\\b|\\btai\\ nghe\\b|\\bheadphone\\b|\\bheadset\\b|\\bmàn\\ hình\\b|\\bmonitor\\b|\\bUSB\\b|\\bổ\\ cứng\\b|\\bSSD\\b|\\bHDD\\b|\\bRAM\\ máy\\ tính\\b|\\bRAM\\ laptop\\b|\\bcáp\\ kết\\ nối\\b|\\bcáp\\ USB\\b|\\bcáp\\ HDMI\\b|\\bsạc\\ laptop\\b|\\badapter\\ laptop\\b|\\bpin\\ laptop\\b|\\bloa\\ máy\\ tính\\b|\\bloa\\ vi\\ tính\\b|\\bgiá\\ đỡ\\ laptop\\b|\\bđế\\ tản\\ nhiệt\\b|\\btúi\\ chống\\ sốc\\ laptop\\b|\\bbalo\\ laptop\\b|\\bsách\\b|\\btruyện\\b|\\btiểu\\ thuyết\\b|\\bmanga\\b)"
+  },
+  {
+    "name": "thuong_hieu",
+    "pattern": "(\\bApple\\b|\\bSamsung\\b|\\bXiaomi\\b|\\bOppo\\b|\\bVivo\\b|\\bHonor\\b|\\bRealme\\b|\\bNokia\\b|\\bLogitech\\b|\\bRapoo\\b|\\bRazer\\b|\\bSony\\b|\\bRockSpace\\b|\\bJBL\\b|\\bHXSJ\\b|\\bE\\-DRA\\b|\\bE\\ Dra\\b|\\bDareU\\b|\\bWD\\b|\\bKingston\\b|\\bSanDisk\\b|\\bUGREEN\\b|\\bLG\\b)"
+  }
+]

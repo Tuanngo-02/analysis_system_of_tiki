@@ -1,0 +1,37 @@
+version: "3.1"
+
+rules:
+  - rule: greet
+    steps:
+      - intent: greet
+      - action: utter_greet
+
+  - rule: goodbye
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - rule: bot challenge
+    steps:
+      - intent: bot_challenge
+      - action: utter_iamabot
+
+  - rule: recommend flow
+    steps:
+      - intent: ask_recommend_product
+      - action: action_recommend_product
+
+  - rule: no preference answer
+    steps:
+      - intent: deny
+      - action: action_recommend_product
+
+  - rule: cancel flow
+    steps:
+      - intent: cancel
+      - action: action_recommend_product
+
+  - rule: nlu fallback
+    steps:
+      - intent: nlu_fallback
+      - action: utter_default

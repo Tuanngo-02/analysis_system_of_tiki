@@ -1,0 +1,10 @@
+[
+  {
+    "name": "loai_san_pham",
+    "pattern": "(\\bđiện\\ thoại\\b|\\bsmartphone\\b|\\biphone\\b|\\bmáy\\ tính\\ bảng\\b|\\btablet\\b|\\bipad\\b|\\bsách\\b|\\btruyện\\b|\\btiểu\\ thuyết\\b|\\bmanga\\b)"
+  },
+  {
+    "name": "thuong_hieu",
+    "pattern": "(\\bApple\\b|\\bSamsung\\b|\\bXiaomi\\b|\\bOppo\\b|\\bVivo\\b|\\bHonor\\b|\\bRealme\\b|\\bNokia\\b)"
+  }
+]

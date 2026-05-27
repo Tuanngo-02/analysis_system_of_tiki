@@ -1,5 +1,8 @@
 // API service để gọi backend
 const API_BASE_URL = "http://localhost:8000/api";
+const RASA_WEBHOOK_URL =
+  import.meta.env.VITE_RASA_WEBHOOK_URL ||
+  "http://localhost:5005/webhooks/rest/webhook";
 
 export const apiService = {
   // Auth APIs
@@ -91,7 +94,7 @@ export const apiService = {
     },
 
     // Get product recommendations
-  async getRecommendations(productUrl) {
+    async getRecommendations(productUrl) {
         try {
             const response = await fetch(`${API_BASE_URL}/recommend`, {
                 method: 'POST',
@@ -110,6 +113,30 @@ export const apiService = {
             return await response.json();
         } catch (error) {
             console.error('Recommendation error:', error);
+            throw error;
+        }
+    },
+
+    async sendChatMessage(message, senderId) {
+        try {
+            const response = await fetch(RASA_WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sender: senderId,
+                    message,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Chatbot error:', error);
             throw error;
         }
     },

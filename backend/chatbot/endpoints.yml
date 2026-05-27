@@ -1,0 +1,4 @@
+# Rasa gọi custom action qua action server local.
+# Chạy bằng: rasa run actions --actions actions
+action_endpoint:
+  url: "http://localhost:5055/webhook"

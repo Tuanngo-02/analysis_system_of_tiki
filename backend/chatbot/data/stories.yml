@@ -1,0 +1,54 @@
+version: "3.1"
+
+stories:
+  - story: hỏi từng bước điện thoại máy tính bảng
+    steps:
+      - intent: ask_recommend_product
+      - action: action_recommend_product
+      - intent: ask_recommend_product
+        entities:
+          - loai_san_pham: "điện thoại"
+      - action: action_recommend_product
+      - intent: ask_recommend_product
+        entities:
+          - gia_toi_da: 10000000
+      - action: action_recommend_product
+      - intent: ask_recommend_product
+        entities:
+          - thuong_hieu: "Samsung"
+      - action: action_recommend_product
+      - intent: ask_recommend_product
+        entities:
+          - cau_hinh: "RAM 8GB"
+      - action: action_recommend_product
+
+  - story: câu dài đủ thông tin
+    steps:
+      - intent: ask_recommend_product
+        entities:
+          - loai_san_pham: "điện thoại"
+          - thuong_hieu: "Samsung"
+          - gia_toi_da: 10000000
+          - cau_hinh: "RAM 8GB"
+      - action: action_recommend_product
+
+  - story: câu dài sách đủ thông tin
+    steps:
+      - intent: ask_recommend_product
+        entities:
+          - loai_san_pham: "sách"
+          - gia_toi_da: 150000
+          - cau_hinh: "tiểu thuyết"
+      - action: action_recommend_product
+
+  - story: câu dài thiếu giá thì hỏi giá
+    steps:
+      - intent: ask_recommend_product
+        entities:
+          - loai_san_pham: "iphone"
+          - cau_hinh: "RAM 8GB"
+      - action: action_recommend_product
+      - intent: ask_recommend_product
+        entities:
+          - gia_toi_da: 25000000
+      - action: action_recommend_product

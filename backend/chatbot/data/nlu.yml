@@ -1,0 +1,248 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - xin chào
+      - chào bạn
+      - hello
+      - hi
+      - bạn ơi
+      - tư vấn giúp mình
+
+  - intent: goodbye
+    examples: |
+      - tạm biệt
+      - bye
+      - cảm ơn
+      - dừng lại
+      - mình xem sau
+
+  - intent: bot_challenge
+    examples: |
+      - bạn là bot à
+      - bạn là ai
+      - đây là chatbot à
+      - ai đang tư vấn
+      - bạn có phải người thật không
+
+  - intent: deny
+    examples: |
+      - không
+      - không cần
+      - bất kỳ
+      - hãng nào cũng được
+      - không yêu cầu
+      - sao cũng được
+
+  - intent: cancel
+    examples: |
+      - hủy
+      - hủy bỏ
+      - bỏ qua
+      - làm lại
+      - bắt đầu lại
+      - reset
+      - nhập lại
+      - hủy luồng này
+      - tư vấn lại từ đầu
+      - quay lại từ đầu
+
+  - intent: ask_recommend_product
+    examples: |
+      - tôi muốn mua sản phẩm
+      - mình muốn mua sản phẩm
+      - mua sản phẩm
+      - tư vấn mua hàng
+      - tôi cần tư vấn
+      - tôi muốn mua [điện thoại](loai_san_pham)
+      - [điện thoại](loai_san_pham)
+      - [smartphone](loai_san_pham)
+      - tôi muốn mua [máy tính bảng](loai_san_pham)
+      - [máy tính bảng](loai_san_pham)
+      - [tablet](loai_san_pham)
+      - tôi muốn mua [chuột](loai_san_pham)
+      - [chuột](loai_san_pham)
+      - [bàn phím](loai_san_pham)
+      - [tai nghe](loai_san_pham)
+      - [màn hình](loai_san_pham)
+      - [USB](loai_san_pham)
+      - [ổ cứng](loai_san_pham)
+      - [RAM máy tính](loai_san_pham)
+      - [cáp kết nối](loai_san_pham)
+      - [sạc laptop](loai_san_pham)
+      - [pin laptop](loai_san_pham)
+      - [loa máy tính](loai_san_pham)
+      - [giá đỡ laptop](loai_san_pham)
+      - [túi chống sốc laptop](loai_san_pham)
+      - tìm [chuột](loai_san_pham) [Logitech](thuong_hieu) dưới [500k]{"entity":"gia_toi_da","value":500000} [không dây](cau_hinh)
+      - tôi muốn mua [bàn phím](loai_san_pham) [Rapoo](thuong_hieu) khoảng [700k]{"entity":"gia_toi_da","value":700000} để [văn phòng](cau_hinh)
+      - gợi ý [tai nghe](loai_san_pham) [Razer](thuong_hieu) tầm [1 triệu]{"entity":"gia_toi_da","value":1000000} [gaming](cau_hinh)
+      - [màn hình](loai_san_pham) [LG](thuong_hieu) dưới [3 triệu]{"entity":"gia_toi_da","value":3000000} [gaming](cau_hinh)
+      - [ổ cứng](loai_san_pham) [WD](thuong_hieu) khoảng [2 triệu]{"entity":"gia_toi_da","value":2000000} [SSD](cau_hinh)
+      - [USB](loai_san_pham) [Kingston](thuong_hieu) dưới [300k]{"entity":"gia_toi_da","value":300000} [USB 3.0](cau_hinh)
+      - [cáp kết nối](loai_san_pham) [UGREEN](thuong_hieu) dưới [200k]{"entity":"gia_toi_da","value":200000} [Type-C](cau_hinh)
+      - [sạc laptop](loai_san_pham) dưới [500k]{"entity":"gia_toi_da","value":500000}
+      - [pin laptop](loai_san_pham) dưới [1 triệu]{"entity":"gia_toi_da","value":1000000}
+      - [loa máy tính](loai_san_pham) dưới [700k]{"entity":"gia_toi_da","value":700000} [bluetooth](cau_hinh)
+      - [giá đỡ laptop](loai_san_pham) dưới [300k]{"entity":"gia_toi_da","value":300000}
+      - [túi chống sốc laptop](loai_san_pham) dưới [400k]{"entity":"gia_toi_da","value":400000}
+      - [iphone](loai_san_pham)
+      - tôi muốn mua [iphone](loai_san_pham)
+      - tôi muốn mua [iPhone](loai_san_pham) 15 Pro giá dưới [25 triệu]{"entity":"gia_toi_da","value":25000000}, [RAM 8GB](cau_hinh)
+      - tôi muốn mua [iPhone](loai_san_pham) 15 Pro, [RAM 8GB](cau_hinh)
+      - [iPhone](loai_san_pham) 15 Pro Max dưới [30 triệu]{"entity":"gia_toi_da","value":30000000}
+      - tìm [điện thoại](loai_san_pham) [Apple](thuong_hieu) giá dưới [25 triệu]{"entity":"gia_toi_da","value":25000000} [camera tốt](cau_hinh)
+      - tôi muốn mua [điện thoại](loai_san_pham) [Samsung](thuong_hieu) giá khoảng [10 triệu]{"entity":"gia_toi_da","value":10000000} [RAM 8GB](cau_hinh)
+      - tìm [điện thoại](loai_san_pham) [Xiaomi](thuong_hieu) dưới [5 triệu]{"entity":"gia_toi_da","value":5000000} pin trâu
+      - [iphone](loai_san_pham) dưới [20 triệu]{"entity":"gia_toi_da","value":20000000} camera tốt
+      - [máy tính bảng](loai_san_pham) [Apple](thuong_hieu) khoảng [12 triệu]{"entity":"gia_toi_da","value":12000000} học online
+      - [điện thoại](loai_san_pham) từ [5 triệu]{"entity":"gia_toi_thieu","value":5000000} đến [10 triệu]{"entity":"gia_toi_da","value":10000000}
+      - giá khoảng [10 triệu]{"entity":"gia_toi_da","value":10000000}
+      - tầm [8 triệu]{"entity":"gia_toi_da","value":8000000}
+      - dưới [15 triệu]{"entity":"gia_toi_da","value":15000000}
+      - trên [5 triệu]{"entity":"gia_toi_thieu","value":5000000}
+      - [Samsung](thuong_hieu)
+      - [Apple](thuong_hieu)
+      - [Xiaomi](thuong_hieu)
+      - [Oppo](thuong_hieu)
+      - [Honor](thuong_hieu)
+      - [Logitech](thuong_hieu)
+      - [Rapoo](thuong_hieu)
+      - [Razer](thuong_hieu)
+      - [Sony](thuong_hieu)
+      - [RockSpace](thuong_hieu)
+      - [JBL](thuong_hieu)
+      - [HXSJ](thuong_hieu)
+      - [E-DRA](thuong_hieu)
+      - [DareU](thuong_hieu)
+      - [WD](thuong_hieu)
+      - [LG](thuong_hieu)
+      - [Kingston](thuong_hieu)
+      - [SanDisk](thuong_hieu)
+      - [UGREEN](thuong_hieu)
+      - [RAM 8GB](cau_hinh)
+      - [RAM 12GB](cau_hinh)
+      - [không dây](cau_hinh)
+      - [bluetooth](cau_hinh)
+      - [gaming](cau_hinh)
+      - [USB 3.0](cau_hinh)
+      - [Type-C](cau_hinh)
+      - [HDMI](cau_hinh)
+      - [DDR4](cau_hinh)
+      - [DDR5](cau_hinh)
+      - [SSD](cau_hinh)
+      - [ROM 128GB](cau_hinh)
+      - [pin trâu](cau_hinh)
+      - [camera tốt](cau_hinh)
+      - [chơi game](cau_hinh)
+      - [văn phòng](cau_hinh)
+      - [học online](cau_hinh)
+      - cấu hình bất kỳ
+      - tôi muốn mua [sách](loai_san_pham)
+      - [sách](loai_san_pham)
+      - [truyện](loai_san_pham)
+      - [tiểu thuyết](loai_san_pham)
+      - tôi muốn mua [sách](loai_san_pham) [tiểu thuyết](cau_hinh) dưới [150k]{"entity":"gia_toi_da","value":150000}
+      - tìm [sách](loai_san_pham) [kinh doanh](cau_hinh) giá khoảng [200k]{"entity":"gia_toi_da","value":200000}
+      - gợi ý [truyện](loai_san_pham) [Conan](cau_hinh) dưới [100k]{"entity":"gia_toi_da","value":100000}
+      - mua [sách](loai_san_pham) [IELTS](cau_hinh) tầm [300k]{"entity":"gia_toi_da","value":300000}
+      - [tiểu thuyết](cau_hinh)
+      - [kinh doanh](cau_hinh)
+      - [Conan](cau_hinh)
+      - [manga](cau_hinh)
+
+  - synonym: điện thoại
+    examples: |
+      - smartphone
+      - iphone
+
+  - synonym: máy tính bảng
+    examples: |
+      - tablet
+      - ipad
+
+  - synonym: chuột
+    examples: |
+      - mouse
+
+  - synonym: bàn phím
+    examples: |
+      - keyboard
+
+  - synonym: tai nghe
+    examples: |
+      - headphone
+      - headset
+
+  - synonym: sách
+    examples: |
+      - truyện
+      - tiểu thuyết
+      - manga
+
+  - lookup: loai_san_pham
+    examples: |
+      - điện thoại
+      - smartphone
+      - iphone
+      - máy tính bảng
+      - tablet
+      - ipad
+      - chuột
+      - mouse
+      - bàn phím
+      - keyboard
+      - tai nghe
+      - headphone
+      - headset
+      - màn hình
+      - monitor
+      - USB
+      - ổ cứng
+      - SSD
+      - HDD
+      - RAM máy tính
+      - RAM laptop
+      - cáp kết nối
+      - cáp USB
+      - cáp HDMI
+      - sạc laptop
+      - adapter laptop
+      - pin laptop
+      - loa máy tính
+      - loa vi tính
+      - giá đỡ laptop
+      - đế tản nhiệt
+      - túi chống sốc laptop
+      - balo laptop
+      - sách
+      - truyện
+      - tiểu thuyết
+      - manga
+
+  - lookup: thuong_hieu
+    examples: |
+      - Apple
+      - Samsung
+      - Xiaomi
+      - Oppo
+      - Vivo
+      - Honor
+      - Realme
+      - Nokia
+      - Logitech
+      - Rapoo
+      - Razer
+      - Sony
+      - RockSpace
+      - JBL
+      - HXSJ
+      - E-DRA
+      - E Dra
+      - DareU
+      - WD
+      - Kingston
+      - SanDisk
+      - UGREEN
+      - LG

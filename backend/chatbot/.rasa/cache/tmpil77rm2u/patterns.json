@@ -1,0 +1,6 @@
+[
+  {
+    "name": "loai_san_pham",
+    "pattern": "(\\blaptop\\b|\\bmáy\\ tính\\ xách\\ tay\\b|\\bđiện\\ thoại\\b|\\biphone\\b|\\bsamsung\\b|\\btai\\ nghe\\b|\\bgiày\\ nam\\b|\\bgiày\\ nữ\\b|\\bsách\\b|\\bbalo\\b|\\bvali\\b|\\btivi\\b|\\bnồi\\ chiên\\ không\\ dầu\\b|\\bmáy\\ hút\\ bụi\\b|\\bchuột\\ không\\ dây\\b)"
+  }
+]

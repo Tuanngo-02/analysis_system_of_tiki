@@ -1,0 +1,85 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - ask_recommend_product
+  - deny
+  - cancel
+  - bot_challenge
+
+entities:
+  - loai_san_pham
+  - gia_toi_da
+  - gia_toi_thieu
+  - thuong_hieu
+  - cau_hinh
+
+slots:
+  loai_san_pham:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: loai_san_pham
+  gia_toi_da:
+    type: float
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: gia_toi_da
+  gia_toi_thieu:
+    type: float
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: gia_toi_thieu
+  thuong_hieu:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: thuong_hieu
+  cau_hinh:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: cau_hinh
+  requested_field:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+  previous_results:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+  last_query:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+  last_error:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+responses:
+  utter_greet:
+    - text: "Chào bạn. Hiện tại mình tư vấn Điện thoại - Máy tính bảng, phụ kiện máy tính và Nhà sách Tiki."
+  utter_goodbye:
+    - text: "Tạm biệt bạn."
+  utter_iamabot:
+    - text: "Mình là chatbot tư vấn sản phẩm Tiki cho Điện thoại - Máy tính bảng, phụ kiện máy tính và Nhà sách Tiki."
+  utter_default:
+    - text: "Bạn có thể nhắn: 'tôi muốn mua sản phẩm', 'tôi muốn mua iPhone 15 Pro giá dưới 25 triệu RAM 8GB', 'tôi muốn mua chuột Logitech dưới 500k không dây', 'tôi muốn mua ổ cứng SSD dưới 2 triệu' hoặc 'tôi muốn mua sách tiểu thuyết dưới 150k'."
+
+actions:
+  - action_recommend_product
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
