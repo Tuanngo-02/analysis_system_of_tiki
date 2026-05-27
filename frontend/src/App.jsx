@@ -8,6 +8,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { SentimentPage } from "./pages/SentimentPage";
 import { RecommendPage } from "./pages/RecommendPage";
+import { ComparePage } from "./pages/ComparePage";
 import { AdminPage } from "./pages/AdminPage";
 import "./App.css";
 
@@ -85,6 +86,14 @@ function App() {
               element={
                 <PrivateRoute user={user}>
                   <RecommendPage user={user} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/compare"
+              element={
+                <PrivateRoute user={user}>
+                  <ComparePage user={user} />
                 </PrivateRoute>
               }
             />

@@ -141,7 +141,7 @@ export function ChatWidget({ user }) {
         <section className="chat-panel" aria-label="Hộp thoại chatbot tư vấn">
           <header className="chat-header">
             <div>
-              <h2>Tư vấn Tiki</h2>
+              <h2>Tư vấn sản phẩm</h2>
               <span>Rasa chatbot</span>
             </div>
             <div className="chat-header-actions">

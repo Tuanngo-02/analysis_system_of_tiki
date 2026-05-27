@@ -1,697 +1,624 @@
 """
-recommend_service.py
-====================
-Luồng gợi ý sản phẩm bổ sung:
+Recommendation service for the Tiki product-link flow.
 
-  Link Tiki
-    → crawl tên sản phẩm
-    → trích 1-2 keyword chính (VD: "laptop asus 8gb" → "laptop")
-    → BiLSTM phân loại category (fallback: keyword classifier)
-    → lấy category bổ sung từ bảng rule
-    → với MỖI category: tìm top 1-2 sản phẩm tương đồng nhất
-       bằng TF-IDF cosine similarity trên keyword
-    → ghép + re-rank → trả về kết quả đa dạng
+Flow:
+1. Receive a Tiki product URL.
+2. Read the product name from local CSV by product_id when possible, otherwise
+   crawl the public page title.
+3. Use the BiLSTM category model from category_service to predict the base
+   category. If the model is unavailable, fall back to CSV category/keywords.
+4. Pick related categories from a small rule map.
+5. Search products in those related categories by product-name similarity.
 
-Yêu cầu:
-    pip install scikit-learn pandas numpy requests beautifulsoup4
-    (tuỳ chọn) pip install tensorflow joblib  ← cho BiLSTM
+The ranking keeps product-name similarity as the main signal. Rating and review
+count are only small tie-breakers.
 """
 
+from __future__ import annotations
+
+import math
 import re
-import os
-import joblib
-import requests
+import unicodedata
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from bs4 import BeautifulSoup
-from typing import List, Dict, Optional, Tuple
-# use the new category service (BiLSTM)
-from app.services.category_service import predict_category
+import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ── BiLSTM (tuỳ chọn) ───────────────────────────────────────
 try:
-    from tensorflow.keras.models import load_model
-    from tensorflow.keras.preprocessing.sequence import pad_sequences
-    _TF_OK = True
+    from bs4 import BeautifulSoup
 except Exception:
-    _TF_OK = False
+    BeautifulSoup = None
 
-# ─────────────────────────────────────────────
-# CẤU HÌNH
-# ─────────────────────────────────────────────
+
 PRODUCTS_PATH = "app/model/model_recommend/tiki_products_info.csv"
-REVIEWS_PATH  = "app/model/model_recommend/tiki_reviews_category.csv"
-MAX_SEQ_LEN   = 100
-PER_CAT_TOP_K = 2    # số sản phẩm lấy mỗi category bổ sung
+REVIEWS_PATH = "app/model/model_recommend/tiki_reviews_category.csv"
 
-CATEGORY_LABELS = [
-    "nha cua doi song", "nha sach tiki", "dien thoai may tinh bang",
-    "do choi me be", "thiet bi kts phu kien so", "dien gia dung",
-    "lam dep suc khoe", "o to xe may xe dap", "thoi trang nu",
-    "bach hoa online", "the thao da ngoai", "thoi trang nam",
-    "laptop may vi tinh linh kien", "giay dep nam", "dien tu dien lanh",
-    "giay dep nu", "may anh", "phu kien thoi trang", "dong ho va trang suc",
-    "balo va vali", "tui vi nu", "tui thoi trang nam", "cham soc nha cua",
-]
+DEFAULT_PER_CATEGORY = 5
+MAX_TOTAL_PRODUCTS = 20
+MIN_SIMILARITY = 0.015
+MIN_LSTM_CONFIDENCE = 45.0
 
-COMPLEMENTARY_MAP = {
-    "laptop may vi tinh linh kien": [
-        "thiet bi kts phu kien so",   # chuột, bàn phím, tai nghe, hub
-        "balo va vali",               # túi, balo laptop
-        "dong ho va trang suc",
-        "laptop may vi tinh linh kien",# smartwatch
-    ],
+
+# Categories are normalized to lowercase, no accents.
+COMPLEMENTARY_MAP: Dict[str, List[str]] = {
     "dien thoai may tinh bang": [
-        "thiet bi kts phu kien so",   # ốp lưng, sạc, cáp, tai nghe
-        "dong ho va trang suc",       # smartwatch
-        "balo va vali", 
-        "dien thoai may tinh bang",# túi đựng
-    ],
-    "may anh": [
-        "thiet bi kts phu kien so",   # thẻ nhớ, pin, đèn flash
-        "balo va vali",               # túi máy ảnh
-        "may anh",
-    ],
-    "thiet bi kts phu kien so": [
-        "laptop may vi tinh linh kien",
         "dien thoai may tinh bang",
         "thiet bi kts phu kien so",
-    ],
-    "dien tu dien lanh": [
-        "dien gia dung",
-        "cham soc nha cua",
-        "nha cua doi song",
-        "dien tu dien lanh",
-    ],
-    "dien gia dung": [
-        "nha cua doi song",
-        "cham soc nha cua",
-        "bach hoa online",
-        "dien gia dung",
-    ],
-    "nha cua doi song": [
-        "cham soc nha cua",
-        "dien gia dung",
-        "bach hoa online",
-        "nha cua doi song",
-    ],
-    "cham soc nha cua": [
-        "nha cua doi song",
-        "dien gia dung",
-        "bach hoa online",
-        "cham soc nha cua",
-    ],
-    "thoi trang nam": [
-        "giay dep nam",
-        "tui thoi trang nam",
-        "dong ho va trang suc",
-        "phu kien thoi trang",
-        "thoi trang nam",
-    ],
-    "giay dep nam": [
-        "thoi trang nam",
-        "phu kien thoi trang",
-        "giay dep nam",
-    ],
-    "tui thoi trang nam": [
-        "thoi trang nam",
-        "giay dep nam",
-        "dong ho va trang suc",
-        "tui thoi trang nam",
-    ],
-    "thoi trang nu": [
-        "giay dep nu",
-        "tui vi nu",
-        "dong ho va trang suc",
-        "phu kien thoi trang",
-        "lam dep suc khoe",
-        "thoi trang nu",
-    ],
-    "giay dep nu": [
-        "thoi trang nu",
-        "tui vi nu",
-        "phu kien thoi trang",
-        "giay dep nu",
-    ],
-    "tui vi nu": [
-        "thoi trang nu",
-        "giay dep nu",
-        "dong ho va trang suc",
-        "tui vi nu",
-    ],
-    "phu kien thoi trang": [
-        "thoi trang nam",
-        "thoi trang nu",
-        "dong ho va trang suc",
-        "phu kien thoi trang",
-    ],
-    "dong ho va trang suc": [
-        "thoi trang nam",
-        "thoi trang nu",
-        "phu kien thoi trang",
-        "dong ho va trang suc",
-    ],
-    "lam dep suc khoe": [
-        "bach hoa online",
-        "thoi trang nu",
-        "cham soc nha cua",
-        "lam dep suc khoe",
-    ],
-    "the thao da ngoai": [
-        "giay dep nam",
-        "giay dep nu",
-        "balo va vali",
-        "dong ho va trang suc",
-        "the thao da ngoai",
-    ],
-    "balo va vali": [
-        "thoi trang nam",
-        "thoi trang nu",
-        "the thao da ngoai",
         "balo va vali",
     ],
-    "o to xe may xe dap": [
-        "thiet bi kts phu kien so",   # camera hành trình, GPS
-        "the thao da ngoai",          # đồ bảo hộ
+    "laptop may vi tinh linh kien": [
+        "laptop may vi tinh linh kien",
+        "thiet bi kts phu kien so",
         "balo va vali",
-        "o to xe may xe dap",
     ],
-    "do choi me be": [
-        "nha sach tiki",
-        "bach hoa online",
-        "lam dep suc khoe",
-        "do choi me be",
+    "thiet bi kts phu kien so": [
+        "thiet bi kts phu kien so",
+        "laptop may vi tinh linh kien",
+        "dien thoai may tinh bang",
     ],
     "nha sach tiki": [
-        "do choi me be",
-        "balo va vali",
-        "nha sach tiki"
-    ],
-    "bach hoa online": [
+        "nha sach tiki",
         "nha cua doi song",
+    ],
+    "may anh": [
+        "may anh",
+        "thiet bi kts phu kien so",
+        "balo va vali",
+    ],
+    "dien tu dien lanh": [
+        "dien tu dien lanh",
         "dien gia dung",
+        "cham soc nha cua",
+        "nha cua doi song",
+    ],
+    "dien gia dung": [
+        "dien gia dung",
+        "nha cua doi song",
+        "cham soc nha cua",
+    ],
+    "nha cua doi song": [
+        "nha cua doi song",
+        "cham soc nha cua",
+        "dien gia dung",
+    ],
+    "thoi trang nam": [
+        "thoi trang nam",
+        "giay dep nam",
+        "tui thoi trang nam",
+        "phu kien thoi trang",
+        "dong ho va trang suc",
+    ],
+    "thoi trang nu": [
+        "thoi trang nu",
+        "giay dep nu",
+        "tui vi nu",
+        "phu kien thoi trang",
+        "dong ho va trang suc",
         "lam dep suc khoe",
-        "bach hoa online",
     ],
-}
-
-# ─────────────────────────────────────────────
-# KEYWORD CHÍNH — ánh xạ category → từ khoá tìm kiếm ngữ nghĩa
-# Dùng để tìm trong pool: "chuột laptop" tốt hơn "laptop asus 8gb viber..."
-# ─────────────────────────────────────────────
-CATEGORY_SEARCH_KEYWORDS = {
-    "thiet bi kts phu kien so": [
-        "chuột máy tính", "bàn phím", "tai nghe", "hub usb",
-        "sạc laptop", "cáp", "webcam", "đế tản nhiệt",
-    ],
-    "balo va vali": [
-        "túi laptop", "balo laptop", "túi chống sốc", "balo du lịch",
+    "giay dep nam": ["giay dep nam", "thoi trang nam", "phu kien thoi trang"],
+    "giay dep nu": ["giay dep nu", "thoi trang nu", "phu kien thoi trang"],
+    "tui vi nu": ["tui vi nu", "thoi trang nu", "giay dep nu"],
+    "tui thoi trang nam": ["tui thoi trang nam", "thoi trang nam", "giay dep nam"],
+    "phu kien thoi trang": [
+        "phu kien thoi trang",
+        "thoi trang nam",
+        "thoi trang nu",
+        "dong ho va trang suc",
     ],
     "dong ho va trang suc": [
-        "đồng hồ thông minh", "smartwatch", "đồng hồ nam", "đồng hồ nữ",
+        "dong ho va trang suc",
+        "phu kien thoi trang",
+        "thoi trang nam",
+        "thoi trang nu",
     ],
-    "giay dep nam": ["giày nam", "giày thể thao nam", "dép nam"],
-    "giay dep nu":  ["giày nữ", "giày cao gót", "dép nữ"],
-    "thoi trang nam": ["áo nam", "quần nam", "áo thun nam"],
-    "thoi trang nu":  ["áo nữ", "váy", "đầm", "áo thun nữ"],
-    "tui vi nu":        ["túi xách nữ", "ví nữ", "clutch"],
-    "tui thoi trang nam": ["túi nam", "ví nam", "túi đeo chéo"],
-    "phu kien thoi trang": ["thắt lưng", "kính mắt", "mũ", "khăn"],
-    "lam dep suc khoe":    ["kem dưỡng da", "son môi", "nước hoa", "mỹ phẩm"],
-    "dien gia dung":   ["nồi cơm điện", "máy xay sinh tố", "bếp điện"],
-    "nha cua doi song":  ["đèn trang trí", "kệ sách", "đồ nội thất"],
-    "cham soc nha cua":  ["nước lau sàn", "chổi quét nhà", "khăn lau"],
-    "bach hoa online":   ["thực phẩm", "đồ ăn vặt", "nước uống"],
-    "the thao da ngoai": ["giày thể thao", "bình nước thể thao", "áo thể thao"],
-    "may anh":           ["thẻ nhớ", "pin máy ảnh", "túi máy ảnh"],
-    "do choi me be":     ["đồ chơi trẻ em", "sách thiếu nhi", "bỉm tã"],
-    "nha sach tiki":     ["sách văn học", "sách kỹ năng", "truyện tranh"],
-    "dien tu dien lanh": ["nước tẩy tủ lạnh", "phụ kiện máy giặt"],
-    "o to xe may xe dap": ["camera hành trình", "mũ bảo hiểm", "bơm xe"],
-    "dien thoai may tinh bang": ["ốp lưng", "tai nghe bluetooth", "sạc dự phòng"],
-    "laptop may vi tinh linh kien": ["chuột không dây", "bàn phím cơ", "tai nghe gaming"],
+    "lam dep suc khoe": ["lam dep suc khoe", "bach hoa online"],
+    "the thao da ngoai": [
+        "the thao da ngoai",
+        "giay dep nam",
+        "giay dep nu",
+        "balo va vali",
+    ],
+    "balo va vali": ["balo va vali", "thoi trang nam", "thoi trang nu"],
+    "o to xe may xe dap": [
+        "o to xe may xe dap",
+        "thiet bi kts phu kien so",
+        "the thao da ngoai",
+    ],
+    "do choi me be": ["do choi me be", "nha sach tiki", "bach hoa online"],
+    "bach hoa online": ["bach hoa online", "nha cua doi song", "dien gia dung"],
+    "cham soc nha cua": ["cham soc nha cua", "nha cua doi song", "dien gia dung"],
 }
 
 
-# ─────────────────────────────────────────────
-# CACHE
-# ─────────────────────────────────────────────
 class _Cache:
-    bilstm    = None
-    tokenizer = None
-    products_df   : Optional[pd.DataFrame] = None
-    pid_category  : Optional[Dict]         = None  # {product_id: category}
-    cat_products  : Optional[Dict]         = None  # {category: [product_ids]}
-    tfidf_per_cat : Optional[Dict]         = None  # {category: (vectorizer, matrix, ids)}
+    products_df: Optional[pd.DataFrame] = None
+    pid_category: Optional[Dict[str, str]] = None
+    tfidf_per_cat: Optional[Dict[str, Tuple[TfidfVectorizer, object, pd.DataFrame]]] = None
+
 
 _cache = _Cache()
 
 
-def _normalize_category_label(category: str) -> str:
-    """Chuẩn hóa label category để tra rule map ổn định."""
-    normalized = re.sub(r"\s+", " ", str(category or "")).strip().lower()
-    alias_map = {
-        "nha sach tiki": "nha sach tiki",
-        "nhà sách tiki": "nha sach tiki",
-        "nha sach": "nha sach tiki",
-        "o to xe may xe dap": "o to xe may xe dap",
-        "ô tô xe máy xe đạp": "o to xe may xe dap",
-    }
-    return alias_map.get(normalized, normalized)
-
-
-# ─────────────────────────────────────────────
-# BƯỚC 0: LOAD DATA & BUILD TF-IDF PER CATEGORY
-# ─────────────────────────────────────────────
-def _load_data():
-    """Load CSV và build TF-IDF vectorizer cho từng category — chạy 1 lần."""
-    if _cache.products_df is not None:
-        return
-
-    # Load products
-    products = pd.read_csv(_find_file(PRODUCTS_PATH), keep_default_na=False)
-    products["product_id"] = products["product_id"].astype(str)
-    products["name"]              = products["name"].fillna("")
-    products["short_description"] = products["short_description"].fillna("")
-    products["rating_average"]    = pd.to_numeric(products["rating_average"], errors="coerce").fillna(3.0)
-    products["review_count"]      = pd.to_numeric(products["review_count"],   errors="coerce").fillna(0)
-    _cache.products_df = products
-
-    # Load reviews để lấy category cho mỗi product_id
-    reviews = pd.read_csv(_find_file(REVIEWS_PATH),
-                          usecols=["product_id", "category"],
-                          keep_default_na=False)
-    reviews["product_id"]    = reviews["product_id"].astype(str)
-    reviews["category_norm"] = reviews["category"].str.strip().str.lower()
-    reviews = reviews.drop_duplicates("product_id")
-
-    _cache.pid_category = dict(zip(reviews["product_id"], reviews["category_norm"]))
-
-    # Nhóm product_id theo category
-    cat_products: Dict[str, List[str]] = {}
-    for pid, cat in _cache.pid_category.items():
-        cat_products.setdefault(cat, []).append(pid)
-    _cache.cat_products = cat_products
-
-    # Build TF-IDF vectorizer cho từng category
-    tfidf_per_cat = {}
-    for cat, pids in cat_products.items():
-        sub = products[products["product_id"].isin(pids)].copy()
-        if sub.empty:
-            continue
-        # Text = tên + mô tả ngắn
-        texts = (sub["name"] + " " + sub["short_description"]).tolist()
-        vec = TfidfVectorizer(
-            ngram_range=(1, 2),
-            max_features=5000,
-            sublinear_tf=True,
-        )
-        try:
-            matrix = vec.fit_transform(texts)
-            tfidf_per_cat[cat] = (vec, matrix, sub["product_id"].tolist(), sub)
-        except Exception:
-            pass
-
-    _cache.tfidf_per_cat = tfidf_per_cat
-
-
 def _find_file(filename: str) -> Path:
     here = Path(__file__).resolve()
-    for p in list(here.parents)[:6] + [Path.cwd()]:
-        c = p / filename
-        if c.exists():
-            return c
-    raise FileNotFoundError(f"Không tìm thấy file: {filename}")
+    for parent in list(here.parents)[:6] + [Path.cwd()]:
+        candidate = parent / filename
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Khong tim thay file: {filename}")
+
+
+def _strip_accents(text: str) -> str:
+    text = unicodedata.normalize("NFD", str(text or ""))
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    return text.replace("đ", "d").replace("Đ", "D")
+
+
+def _normalize_text(text: str) -> str:
+    text = _strip_accents(text).lower()
+    text = re.sub(r"[^a-z0-9\s]+", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def _normalize_category_label(category: str) -> str:
+    normalized = _normalize_text(category)
+    aliases = {
+        "nha sach": "nha sach tiki",
+        "nha sach tiki": "nha sach tiki",
+        "dien thoai": "dien thoai may tinh bang",
+        "may tinh bang": "dien thoai may tinh bang",
+        "dien thoai may tinh bang": "dien thoai may tinh bang",
+        "laptop may vi tinh linh kien": "laptop may vi tinh linh kien",
+        "thiet bi kts phu kien so": "thiet bi kts phu kien so",
+        "o to xe may xe dap": "o to xe may xe dap",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _extract_product_id(product_url: str) -> Optional[str]:
+    match = re.search(r"p(\d+)(?:\.html)?", str(product_url or ""))
+    return match.group(1) if match else None
 
 
 def _native(value):
-    """Convert numpy/pandas scalars to plain Python types for JSON encoding."""
     if isinstance(value, np.generic):
         return value.item()
+    if pd.isna(value):
+        return ""
     return value
 
 
-# ─────────────────────────────────────────────
-# BƯỚC 1: CRAWL LINK TIKI
-# ─────────────────────────────────────────────
-def _crawl_tiki(url: str) -> Dict[str, str]:
+def _to_float(value, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _to_int(value, default: int = 0) -> int:
+    try:
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def _load_data() -> None:
+    """Load products/reviews and build one TF-IDF index per category."""
+    if _cache.products_df is not None:
+        return
+
+    products = pd.read_csv(_find_file(PRODUCTS_PATH), keep_default_na=False)
+    products["product_id"] = products["product_id"].astype(str)
+
+    for col in [
+        "name",
+        "brand",
+        "seller",
+        "short_description",
+        "description",
+        "thumbnail_url",
+        "product_url",
+    ]:
+        if col not in products.columns:
+            products[col] = ""
+        products[col] = products[col].fillna("").astype(str)
+
+    products["price"] = pd.to_numeric(products.get("price", 0), errors="coerce").fillna(0)
+    products["rating_average"] = pd.to_numeric(
+        products.get("rating_average", 0), errors="coerce"
+    ).fillna(0)
+    products["review_count"] = pd.to_numeric(
+        products.get("review_count", 0), errors="coerce"
+    ).fillna(0)
+
+    reviews = pd.read_csv(
+        _find_file(REVIEWS_PATH),
+        usecols=["product_id", "category"],
+        keep_default_na=False,
+    )
+    reviews["product_id"] = reviews["product_id"].astype(str)
+    reviews["category_norm"] = reviews["category"].apply(_normalize_category_label)
+    reviews = reviews.drop_duplicates("product_id")
+
+    pid_category = dict(zip(reviews["product_id"], reviews["category_norm"]))
+    products["category_norm"] = products["product_id"].map(pid_category).fillna("")
+
+    # Product name is the primary search document. Brand is included because
+    # users often expect iPhone/Samsung/Logitech-like names to stay close.
+    products["match_text"] = (
+        products["name"].fillna("")
+        + " "
+        + products["brand"].fillna("")
+    ).apply(_normalize_text)
+
+    tfidf_per_cat: Dict[str, Tuple[TfidfVectorizer, object, pd.DataFrame]] = {}
+    for category, sub_df in products.groupby("category_norm"):
+        if not category:
+            continue
+
+        sub_df = sub_df.reset_index(drop=True).copy()
+        texts = sub_df["match_text"].tolist()
+        if not any(texts):
+            continue
+
+        vectorizer = TfidfVectorizer(
+            analyzer="char_wb",
+            ngram_range=(3, 5),
+            min_df=1,
+            sublinear_tf=True,
+            norm="l2",
+        )
+        try:
+            matrix = vectorizer.fit_transform(texts)
+        except ValueError:
+            continue
+
+        tfidf_per_cat[category] = (vectorizer, matrix, sub_df)
+
+    _cache.products_df = products
+    _cache.pid_category = pid_category
+    _cache.tfidf_per_cat = tfidf_per_cat
+
+
+def _get_product_from_csv(product_url: str) -> Dict[str, str]:
+    _load_data()
+    assert _cache.products_df is not None
+
+    product_id = _extract_product_id(product_url)
+    row = pd.DataFrame()
+
+    if product_id:
+        row = _cache.products_df[_cache.products_df["product_id"] == product_id]
+
+    if row.empty and product_url:
+        row = _cache.products_df[
+            _cache.products_df["product_url"].astype(str).str.contains(product_url, regex=False)
+        ]
+
+    if row.empty:
+        return {}
+
+    item = row.iloc[0]
+    return {
+        "product_id": str(item.get("product_id", "")),
+        "title": str(item.get("name", "")),
+        "description": str(item.get("short_description", "")),
+        "category": str(item.get("category_norm", "")),
+        "product_url": str(item.get("product_url", "")) or product_url,
+    }
+
+
+def _crawl_tiki(product_url: str) -> Dict[str, str]:
+    if BeautifulSoup is None:
+        return {
+            "product_id": _extract_product_id(product_url) or "",
+            "title": "",
+            "description": "",
+            "category": "",
+            "product_url": product_url,
+        }
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36"
         ),
-        "Accept-Language": "vi-VN,vi;q=0.9",
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://tiki.vn/",
     }
+
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
+        response = requests.get(product_url, headers=headers, timeout=12)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        tag = soup.find("meta", property="og:title") or soup.find("h1")
-        title = (tag.get("content") or tag.get_text()).strip() if tag else ""
+        title_tag = soup.find("meta", property="og:title") or soup.find("h1")
+        title = ""
+        if title_tag:
+            title = (title_tag.get("content") or title_tag.get_text()).strip()
 
-        desc_tag = (soup.find("meta", property="og:description")
-                    or soup.find("meta", attrs={"name": "description"}))
-        desc = desc_tag["content"].strip() if desc_tag and desc_tag.get("content") else ""
-        return {"title": title, "description": desc}
-
+        desc_tag = (
+            soup.find("meta", property="og:description")
+            or soup.find("meta", attrs={"name": "description"})
+        )
+        description = desc_tag.get("content", "").strip() if desc_tag else ""
+        return {
+            "product_id": _extract_product_id(product_url) or "",
+            "title": title,
+            "description": description,
+            "category": "",
+            "product_url": product_url,
+        }
     except Exception:
-        # Fallback: tra CSV theo product_id
-        m = re.search(r"p(\d+)(?:\.html)?", url)
-        if m:
-            pid = m.group(1)
-            try:
-                df = pd.read_csv(_find_file(PRODUCTS_PATH),
-                                 dtype=str, keep_default_na=False)
-                row = df[df["product_id"] == pid]
-                if not row.empty:
-                    r = row.iloc[0]
-                    return {
-                        "title": r.get("name", ""),
-                        "description": r.get("short_description", ""),
-                    }
-            except Exception:
-                pass
-        return {"title": "", "description": ""}
-
-
-# ─────────────────────────────────────────────
-# BƯỚC 2: TRÍCH KEYWORD CHÍNH
-# ─────────────────────────────────────────────
-
-# Từ vô nghĩa cần loại bỏ khỏi keyword
-_NOISE = {
-    "gb", "tb", "mb", "ram", "rom", "ssd", "hdd", "inch", "cm", "mm",
-    "w", "v", "hz", "ghz", "mhz", "mah", "pin", "phiên", "bản", "hàng",
-    "chính", "hãng", "tặng", "kèm", "miễn", "phí", "combo", "set",
-    "và", "của", "cho", "với", "trong", "ngoài",
-    "to", "the", "a", "an", "or", "of",
-}
-
-# Từ khoá mô tả loại sản phẩm — ưu tiên lấy làm keyword
-_PRODUCT_TYPE_HINTS = [
-    "laptop", "máy tính", "notebook", "macbook",
-    "điện thoại", "smartphone", "iphone", "samsung",
-    "máy ảnh", "camera",
-    "tai nghe", "headphone", "airpod",
-    "chuột", "bàn phím", "keyboard", "mouse",
-    "màn hình", "monitor",
-    "tivi", "tủ lạnh", "máy giặt", "máy lạnh", "điều hòa",
-    "nồi", "bếp", "máy xay",
-    "giày", "dép", "sneaker",
-    "áo", "quần", "váy", "đầm",
-    "túi", "balo", "ví",
-    "đồng hồ", "smartwatch",
-    "sách", "truyện",
-    "xe đạp", "xe máy",
-    "mỹ phẩm", "kem", "son",
-]
-
-
-def extract_keywords(product_name: str) -> List[str]:
-    """
-    Trích 1-2 keyword chính từ tên sản phẩm.
-
-    Ưu tiên theo thứ tự:
-      1. Từ khoá loại sản phẩm đã biết (laptop, giày, túi...)
-      2. Từ đầu tiên không phải noise (thường là brand/loại)
-
-    Ví dụ:
-        "Laptop ASUS VivoBook 15 8GB 512GB" → ["laptop", "asus"]
-        "Áo thun nam basic oversize"        → ["áo", "nam"]
-        "Tai nghe Bluetooth Sony WH-1000XM5" → ["tai nghe", "bluetooth"]
-    """
-    name_lower = product_name.lower()
-    keywords = []
-
-    # Ưu tiên 1: tìm từ khoá loại sản phẩm
-    for hint in _PRODUCT_TYPE_HINTS:
-        if hint in name_lower and hint not in keywords:
-            keywords.append(hint)
-            if len(keywords) >= 1:
-                break
-
-    # Ưu tiên 2: từ đầu tiên không phải noise, không phải số
-    tokens = re.split(r"[\s\-/,\.\(\)\[\]]+", name_lower)
-    for tok in tokens:
-        if tok and tok not in _NOISE and not tok.isdigit() and len(tok) > 1:
-            if tok not in keywords:
-                keywords.append(tok)
-            if len(keywords) >= 2:
-                break
-
-    return keywords[:2] if keywords else [name_lower.split()[0]]
-
-
-# ─────────────────────────────────────────────
-# BƯỚC 3: PHÂN LOẠI CATEGORY
-# ─────────────────────────────────────────────
-def _load_bilstm():
-    if _cache.bilstm is not None or _cache.tokenizer is not None:
-        return _cache.bilstm
-    if not _TF_OK:
-        return None
-
-    root = Path(__file__).resolve().parents[1] / "modelcategory"
-    model_path = root / "bilstm_category_model.h5"
-    tok_paths  = [root / "tokenizer.pkl", root / "tokenizer.joblib"]
-
-    if model_path.exists():
-        try:
-            _cache.bilstm = load_model(str(model_path))
-        except Exception:
-            pass
-
-    for p in tok_paths:
-        if p.exists():
-            try:
-                _cache.tokenizer = joblib.load(str(p))
-                break
-            except Exception:
-                pass
-
-    return _cache.bilstm
-
-
-def _classify_bilstm(text: str) -> Optional[str]:
-    model = _load_bilstm()
-    if model is None or _cache.tokenizer is None:
-        return None
-    try:
-        seq    = _cache.tokenizer.texts_to_sequences([text])
-        padded = pad_sequences(seq, maxlen=MAX_SEQ_LEN)
-        preds  = model.predict(padded, verbose=0)
-        idx    = int(np.argmax(preds, axis=1)[0])
-        return CATEGORY_LABELS[idx] if 0 <= idx < len(CATEGORY_LABELS) else None
-    except Exception:
-        return None
+        return {
+            "product_id": _extract_product_id(product_url) or "",
+            "title": "",
+            "description": "",
+            "category": "",
+            "product_url": product_url,
+        }
 
 
 def _classify_keyword(text: str) -> str:
-    """Fallback phân loại đơn giản bằng keyword matching."""
-    t = text.lower()
+    text = _normalize_text(text)
     rules = [
-        (["laptop", "notebook", "macbook", "asus", "dell", "lenovo", "msi"],
-         "laptop may vi tinh linh kien"),
-        (["điện thoại", "smartphone", "iphone", "samsung", "xiaomi", "oppo"],
-         "dien thoai may tinh bang"),
-        (["máy ảnh", "dslr", "mirrorless", "canon", "nikon"],
-         "may anh"),
-        (["tai nghe", "headphone", "chuột", "mouse", "bàn phím", "hub usb",
-          "sạc", "cáp", "powerbank"],
-         "thiet bi kts phu kien so"),
-        (["tivi", "tủ lạnh", "máy giặt", "điều hòa", "máy lạnh"],
-         "dien tu dien lanh"),
-        (["nồi", "bếp", "máy xay", "ấm đun"],
-         "dien gia dung"),
-        (["giày nam", "giay nam", "sneaker nam"],          "giay dep nam"),
-        (["giày nữ", "giay nu", "sandal", "cao gót"],      "giay dep nu"),
-        (["áo nữ", "váy", "đầm", "ao nu"],                "thoi trang nu"),
-        (["áo nam", "quần nam", "ao nam"],                 "thoi trang nam"),
-        (["túi nữ", "ví nữ", "clutch", "tui nu"],         "tui vi nu"),
-        (["túi nam", "ví nam", "tui nam"],                 "tui thoi trang nam"),
-        (["balo", "vali", "ba lô"],                        "balo va vali"),
-        (["đồng hồ", "smartwatch", "trang sức"],           "dong ho va trang suc"),
-        (["mỹ phẩm", "kem dưỡng", "son môi", "nước hoa"], "lam dep suc khoe"),
-        (["sách", "truyện", "tiểu thuyết"],                "nha sach tiki"),
-        (["đồ chơi", "trẻ em", "bé"],                     "do choi me be"),
-        (["thể thao", "dã ngoại", "outdoor"],              "the thao da ngoai"),
-        (["xe đạp", "xe máy", "ô tô"],                    "o to xe may xe dap"),
-        (["đèn", "kệ", "nội thất", "decor"],              "nha cua doi song"),
-        (["lau nhà", "chổi", "dọn dẹp"],                  "cham soc nha cua"),
-        (["thực phẩm", "đồ ăn", "nước uống"],             "bach hoa online"),
+        (
+            ["iphone", "ipad", "dien thoai", "smartphone", "samsung", "xiaomi", "oppo"],
+            "dien thoai may tinh bang",
+        ),
+        (
+            ["laptop", "macbook", "may tinh", "ban phim", "chuot", "ram", "ssd", "hdd"],
+            "laptop may vi tinh linh kien",
+        ),
+        (
+            ["tai nghe", "headphone", "loa", "cap", "sac", "hub", "usb", "webcam"],
+            "thiet bi kts phu kien so",
+        ),
+        (["sach", "truyen", "tieu thuyet", "manga"], "nha sach tiki"),
+        (["may anh", "camera", "canon", "nikon"], "may anh"),
+        (["tivi", "tu lanh", "may giat", "dieu hoa", "may lanh"], "dien tu dien lanh"),
+        (["noi", "bep", "may xay", "am dun"], "dien gia dung"),
+        (["giay nam", "sneaker nam"], "giay dep nam"),
+        (["giay nu", "sandal", "cao got"], "giay dep nu"),
+        (["ao nu", "vay", "dam"], "thoi trang nu"),
+        (["ao nam", "quan nam"], "thoi trang nam"),
+        (["tui nu", "vi nu"], "tui vi nu"),
+        (["tui nam", "vi nam"], "tui thoi trang nam"),
+        (["balo", "vali"], "balo va vali"),
+        (["dong ho", "smartwatch", "trang suc"], "dong ho va trang suc"),
+        (["my pham", "kem duong", "son moi", "nuoc hoa"], "lam dep suc khoe"),
+        (["the thao", "da ngoai", "outdoor"], "the thao da ngoai"),
+        (["xe dap", "xe may", "o to"], "o to xe may xe dap"),
+        (["do choi", "tre em", "be"], "do choi me be"),
+        (["thuc pham", "do an", "nuoc uong"], "bach hoa online"),
+        (["lau nha", "choi", "don dep"], "cham soc nha cua"),
+        (["den", "ke", "noi that", "decor"], "nha cua doi song"),
     ]
-    for keywords, cat in rules:
-        if any(k in t for k in keywords):
-            return cat
+
+    for keywords, category in rules:
+        if any(keyword in text for keyword in keywords):
+            return category
+
     return "bach hoa online"
 
 
-def classify_category(text: str) -> str:
-    return _classify_bilstm(text) or _classify_keyword(text)
+def _predict_base_category(title: str, description: str, fallback_category: str) -> Tuple[str, float, str]:
+    """Use the BiLSTM model first; fall back only when it cannot run."""
+    model_text = " ".join(part for part in [title, description] if part).strip()
+
+    if model_text:
+        try:
+            from app.services.category_service import predict_category
+
+            category, confidence = predict_category(model_text)
+            category = _normalize_category_label(category)
+            confidence = float(confidence)
+            if confidence >= MIN_LSTM_CONFIDENCE or not fallback_category:
+                return category, confidence, "bilstm"
+        except Exception:
+            pass
+
+    if fallback_category:
+        return _normalize_category_label(fallback_category), 0.0, "csv"
+
+    return _classify_keyword(model_text), 0.0, "keyword"
 
 
-# ─────────────────────────────────────────────
-# BƯỚC 4: TÌM SẢN PHẨM TƯƠNG ĐỒNG THEO TỪNG CATEGORY
-# ─────────────────────────────────────────────
+def _related_categories(base_category: str) -> List[str]:
+    base_category = _normalize_category_label(base_category)
+    categories = COMPLEMENTARY_MAP.get(base_category, [base_category])
+
+    # Keep order while removing duplicates and unknown empty categories.
+    result = []
+    for category in categories:
+        normalized = _normalize_category_label(category)
+        if normalized and normalized not in result:
+            result.append(normalized)
+    return result
+
+
+def extract_keywords(product_name: str, max_terms: int = 6) -> List[str]:
+    """Small keyword list for display/debugging, not for hard filtering."""
+    normalized = _normalize_text(product_name)
+    stopwords = {
+        "hang",
+        "chinh",
+        "hang chinh",
+        "hang chinh hang",
+        "bao",
+        "hanh",
+        "moi",
+        "fullbox",
+        "nhap",
+        "khau",
+        "tiki",
+    }
+    tokens = [tok for tok in normalized.split() if len(tok) > 1 and tok not in stopwords]
+    keywords: List[str] = []
+    for token in tokens:
+        if token not in keywords:
+            keywords.append(token)
+        if len(keywords) >= max_terms:
+            break
+    return keywords
+
+
+def _product_to_dict(row: pd.Series, category: str, similarity: float, score: float) -> Dict:
+    return {
+        "product_id": str(_native(row.get("product_id", ""))),
+        "name": str(_native(row.get("name", ""))),
+        "price": int(_to_int(row.get("price", 0))),
+        "rating": round(_to_float(row.get("rating_average", 0)), 2),
+        "review_count": _to_int(row.get("review_count", 0)),
+        "brand": str(_native(row.get("brand", ""))),
+        "thumbnail_url": str(_native(row.get("thumbnail_url", ""))),
+        "product_url": str(_native(row.get("product_url", ""))),
+        "category": category,
+        "similarity": round(float(similarity), 4),
+        "score": round(float(score), 4),
+    }
+
+
 def _search_in_category(
-    query: str,
+    query_name: str,
     category: str,
-    top_k: int = PER_CAT_TOP_K,
+    top_k: int = DEFAULT_PER_CATEGORY,
+    exclude_product_id: Optional[str] = None,
 ) -> List[Dict]:
-    """
-    Tìm top_k sản phẩm trong 1 category có độ tương đồng TF-IDF cao nhất
-    với query (thường là keyword chính + search hint của category đó).
-
-    Re-rank cuối bằng: sim × rating × log(review_count+1)
-    """
+    """Find products in a category using product-name similarity."""
     _load_data()
+    assert _cache.tfidf_per_cat is not None
+
+    category = _normalize_category_label(category)
     tfidf_data = _cache.tfidf_per_cat.get(category)
     if tfidf_data is None:
         return []
 
-    vec, matrix, pids, sub_df = tfidf_data
+    vectorizer, matrix, sub_df = tfidf_data
+    query = _normalize_text(query_name)
+    if not query:
+        return []
 
     try:
-        q_vec  = vec.transform([query])
-        scores = cosine_similarity(q_vec, matrix).flatten()
+        q_vec = vectorizer.transform([query])
+        similarities = cosine_similarity(q_vec, matrix).flatten()
     except Exception:
         return []
 
-    # Re-rank: sim × chất lượng sản phẩm
-    ratings = sub_df["rating_average"].values
-    counts  = sub_df["review_count"].values
-    final   = scores * ratings * np.log1p(counts + 1)
+    ratings = sub_df["rating_average"].astype(float).clip(lower=0, upper=5).to_numpy()
+    review_counts = sub_df["review_count"].astype(float).clip(lower=0).to_numpy()
+    review_signal = np.log1p(review_counts) / max(1.0, math.log1p(float(review_counts.max() or 1)))
 
-    top_idx = final.argsort()[::-1][:top_k]
-    results = []
-    for i in top_idx:
-        if scores[i] < 0.01:   # bỏ kết quả không liên quan
+    # Name similarity is deliberately dominant. Quality only breaks ties.
+    final_scores = similarities * 0.86 + (ratings / 5.0) * 0.09 + review_signal * 0.05
+
+    order = final_scores.argsort()[::-1]
+    results: List[Dict] = []
+    for idx in order:
+        row = sub_df.iloc[int(idx)]
+        product_id = str(row.get("product_id", ""))
+        if exclude_product_id and product_id == str(exclude_product_id):
             continue
-        row = sub_df.iloc[i]
-        results.append({
-            "product_id"   : str(_native(row["product_id"])),
-            "name"         : str(_native(row["name"])),
-            "price"        : str(_native(row.get("price", ""))),
-            "rating"       : float(_native(row["rating_average"])),
-            "review_count" : int(_native(row["review_count"])),
-            "thumbnail_url": str(_native(row.get("thumbnail_url", ""))),
-            "product_url"  : str(_native(row.get("product_url", ""))),
-            "category"     : str(category),
-            "similarity"   : float(round(float(scores[i]), 4)),
-            "score"        : float(round(float(final[i]), 4)),
-        })
+        if similarities[idx] < MIN_SIMILARITY:
+            continue
+
+        results.append(
+            _product_to_dict(
+                row=row,
+                category=category,
+                similarity=float(similarities[idx]),
+                score=float(final_scores[idx]),
+            )
+        )
+        if len(results) >= top_k:
+            break
+
     return results
 
 
-# ─────────────────────────────────────────────
-# HÀM CHÍNH
-# ─────────────────────────────────────────────
-def recommend_product(product_url: str, per_cat: int = PER_CAT_TOP_K) -> Dict:
-    """
-    Gợi ý sản phẩm bổ sung từ link Tiki.
-
-    Args:
-        product_url: URL sản phẩm Tiki
-        per_cat:     Số sản phẩm lấy mỗi category bổ sung (mặc định 2)
-
-    Returns:
-        {
-          "input": {
-              "title": str,
-              "keywords": List[str],
-              "base_category": str,
-              "complementary_categories": List[str],
-          },
-          "suggestions": [
-              {
-                  "category": str,
-                  "products": [
-                      {
-                          "product_id", "name", "price",
-                          "rating", "review_count",
-                          "thumbnail_url", "product_url",
-                          "similarity", "score"
-                      }, ...
-                  ]
-              }, ...
-          ]
-        }
-    """
+def recommend_product(product_url: str, per_cat: int = DEFAULT_PER_CATEGORY) -> Dict:
+    """Return related product suggestions for one Tiki product URL."""
     _load_data()
 
-    # 1. Crawl tên sản phẩm
-    scraped   = _crawl_tiki(product_url)
-    title     = scraped.get("title", "")
-    full_text = title + " " + scraped.get("description", "")
+    product_url = str(product_url or "").strip()
+    source = _get_product_from_csv(product_url)
+    if not source:
+        source = _crawl_tiki(product_url)
 
-    # 2. Trích keyword chính
-    keywords = extract_keywords(title) if title else ["sản phẩm"]
+    title = source.get("title", "").strip()
+    description = source.get("description", "").strip()
+    product_id = source.get("product_id") or _extract_product_id(product_url) or ""
 
-    # 3. Phân loại category — ưu tiên BiLSTM từ `category_service.predict_category`
-    try:
-        # predict_category returns (category, confidence)
-        base_cat, confidence = predict_category(title or full_text)
-    except Exception:
-        base_cat = classify_category(full_text or title)
+    if not title:
+        raise ValueError("Khong lay duoc ten san pham tu link Tiki")
 
-    base_cat = _normalize_category_label(base_cat)
+    base_category, confidence, model_name = _predict_base_category(
+        title=title,
+        description=description,
+        fallback_category=source.get("category", ""),
+    )
+    related_categories = _related_categories(base_category)
 
-    # 4. Lấy các category bổ sung
-    comp_cats = COMPLEMENTARY_MAP.get(base_cat, [])
-
-    # 5. Với mỗi category bổ sung: build query và tìm top sản phẩm
     suggestions = []
-    for cat in comp_cats:
-        # Query = keyword chính + hint tìm kiếm của category đó
-        hints       = CATEGORY_SEARCH_KEYWORDS.get(cat, [])
-        search_hint = hints[0] if hints else cat.replace(" ", " ")
-        query       = " ".join(keywords) + " " + search_hint
+    total = 0
+    for category in related_categories:
+        remaining = max(0, MAX_TOTAL_PRODUCTS - total)
+        if remaining <= 0:
+            break
 
-        products_in_cat = _search_in_category(query, cat, top_k=per_cat)
-        if products_in_cat:
-            suggestions.append({
-                "category": cat,
-                "products": products_in_cat,
-            })
+        products = _search_in_category(
+            query_name=title,
+            category=category,
+            top_k=min(per_cat, remaining),
+            exclude_product_id=product_id,
+        )
+        if not products:
+            continue
+
+        suggestions.append({"category": category, "products": products})
+        total += len(products)
 
     return {
         "input": {
-            "title"                   : title,
-            "keywords"                : [str(_native(k)) for k in keywords],
-            "base_category"           : base_cat,
-            "complementary_categories": [str(_native(c)) for c in comp_cats],
+            "product_url": product_url,
+            "product_id": product_id,
+            "title": title,
+            "keywords": extract_keywords(title),
+            "base_category": base_category,
+            "category_confidence": round(confidence, 2),
+            "category_model": model_name,
+            "related_categories": related_categories,
+            # Kept for backward compatibility with the old frontend.
+            "complementary_categories": related_categories,
         },
         "suggestions": suggestions,
     }
 
 
-# ─────────────────────────────────────────────
-# DEMO
-# ─────────────────────────────────────────────
-def _print_result(result: Dict):
-    inp = result["input"]
-    print(f"\n{'='*60}")
-    print(f"Sản phẩm : {inp['title']}")
-    print(f"Keyword  : {inp['keywords']}")
-    print(f"Category : {inp['base_category']}")
-    print(f"Bổ sung  : {inp['complementary_categories']}")
-    print(f"{'='*60}")
+def _print_result(result: Dict) -> None:
+    input_data = result["input"]
+    print("=" * 80)
+    print(f"Product : {input_data['title']}")
+    print(f"Category: {input_data['base_category']} ({input_data['category_model']})")
+    print(f"Related : {', '.join(input_data['related_categories'])}")
+    print("=" * 80)
     for group in result["suggestions"]:
-        print(f"\n▶ [{group['category']}]")
-        for p in group["products"]:
-            print(f"   • {p['name'][:65]}")
-            print(f"     sim={p['similarity']:.3f} | ⭐{p['rating']} "
-                  f"| {p['review_count']} reviews")
+        print(f"\n[{group['category']}]")
+        for product in group["products"]:
+            print(
+                f"- {product['name'][:80]} | "
+                f"sim={product['similarity']:.3f} | "
+                f"rating={product['rating']} | "
+                f"reviews={product['review_count']}"
+            )
 
 
 if __name__ == "__main__":
-    # Test thử — thay bằng link thật hoặc test với product_id từ CSV
-    test_url = "https://tiki.vn/laptop-asus-vivobook-15-p12345678.html"
-    print(f"Test URL: {test_url}")
-    result = recommend_product(test_url)
-    _print_result(result)
+    demo_url = "https://tiki.vn/laptop-asus-vivobook-15-p12345678.html"
+    _print_result(recommend_product(demo_url))

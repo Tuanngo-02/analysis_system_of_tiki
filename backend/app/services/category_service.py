@@ -12,7 +12,11 @@ from typing import Dict, Optional, Tuple
 import joblib
 import numpy as np
 import requests
-from bs4 import BeautifulSoup
+
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
 
 try:
     from tensorflow.keras.models import load_model
@@ -77,6 +81,9 @@ def _load_assets() -> None:
 
 
 def _crawl_tiki_title(product_url: str) -> str:
+    if BeautifulSoup is None:
+        return ""
+
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

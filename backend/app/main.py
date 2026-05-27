@@ -12,7 +12,7 @@ app = FastAPI(title="FastAPI Backend")
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,8 +44,10 @@ from app.routes.auth_router import router as auth_router
 from app.routes.recommend_router import router as recommend_router
 from app.routes.sentiment_router import router as sentiment_router
 from app.routes.category_router import router as category_router
+from app.routes.compare_router import router as compare_router
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(recommend_router, prefix="/api")
 app.include_router(sentiment_router, prefix="/api")
 app.include_router(category_router, prefix="/api")
+app.include_router(compare_router, prefix="/api")

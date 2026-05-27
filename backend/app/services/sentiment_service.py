@@ -49,49 +49,100 @@ def extract_tiki_ids(url):
 
 def fetch_tiki_reviews(url):
     product_id, spid = extract_tiki_ids(url)
-    if not product_id: return []
-    
-    headers = {'User-Agent': 'Mozilla/5.0'}
+
+    if not product_id:
+        return None
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+    }
+
     api_url = "https://tiki.vn/api/v2/reviews"
-    params = {
-        'limit': 10, # Giới hạn để API chạy nhanh
-        'spid': spid,
-        'product_id': product_id
-    }
-    
+
+    all_reviews = []
+
     try:
-        response = requests.get(api_url, headers=headers, params=params, timeout=10)
-        if response.status_code == 200:
+        for page in range(1, 11):
+
+            params = {
+                "limit": 20,
+                "page": page,
+                "include": "comments,contribute_info,attribute_vote_summary",
+                "sort": "score|desc,id|desc,stars|all",
+                "spid": spid,
+                "product_id": product_id
+            }
+
+            response = requests.get(
+                api_url,
+                headers=headers,
+                params=params,
+                timeout=10
+            )
+
+            if response.status_code != 200:
+                break
+
             data = response.json()
-            return [rv.get('content', '') for rv in data.get('data', []) if rv.get('content')]
-    except Exception:
-        return []
-    return []
 
+            page_reviews = data.get("data", [])
+
+            if not page_reviews:
+                break
+
+            for rv in page_reviews:
+
+                content = rv.get("content")
+
+                # chỉ lấy review có chữ
+                if content and content.strip():
+                    all_reviews.append(content.strip())
+
+        # không có review text
+        if len(all_reviews) == 0:
+            return None
+
+        return all_reviews
+
+    except Exception as e:
+        print("Fetch review error:", e)
+        return None
 def analyze_sentiment_logic(url: str):
-    reviews = fetch_tiki_reviews(url)
-    if not reviews:
-        return {"status": "error", "message": "Không tìm thấy review nào hoặc URL sai."}
+    try:
+        reviews = fetch_tiki_reviews(url)
+        # bỏ qua sản phẩm không có review text
+        if reviews is None:
+            return None
+        if not reviews:
+            return {"status": "error", "message": "Không tìm thấy review nào hoặc URL sai."}
 
-    model = get_model()
-    tokenizer = get_tokenizer()
-    
-    sequences = tokenizer.texts_to_sequences(reviews)
-    padded = pad_sequences(sequences, maxlen=100, padding='post', truncating='post')
-    predictions = model.predict(padded, verbose=0)
+        model = get_model()
+        tokenizer = get_tokenizer()
+        
+        sequences = tokenizer.texts_to_sequences(reviews)
+        padded = pad_sequences(sequences, maxlen=100, padding='post', truncating='post')
+        predictions = model.predict(padded, verbose=0)
 
-    results = []
-    for i, text in enumerate(reviews):
-        score = float(predictions[i][0]) if predictions.shape[-1] == 1 else float(predictions[i][1])
-        label = "Tích cực" if score > 0.5 else "Tiêu cực"
-        results.append({
-            "review": text,
-            "label": label,
-            "confidence": round(score, 2)
-        })
+        results = []
+        for i, text in enumerate(reviews):
+            score = float(predictions[i][0]) if predictions.shape[-1] == 1 else float(predictions[i][1])
+            label = "Tích cực" if score > 0.5 else "Tiêu cực"
+            results.append({
+                "review": text,
+                "label": label,
+                "confidence": round(score, 2)
+            })
 
-    return {
-        "product_url": url,
-        "total_reviews": len(results),
-        "data": results
-    }
+        return {
+            "product_url": url,
+            "total_reviews": len(results),
+            "data": results
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e)
+        }
