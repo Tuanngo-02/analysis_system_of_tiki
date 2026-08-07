@@ -22,6 +22,8 @@ async def analyze_sentiment(request: ProductURLRequest):
             raise HTTPException(status_code=400, detail=result["message"])
             
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

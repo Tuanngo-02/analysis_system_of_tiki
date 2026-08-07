@@ -11,6 +11,7 @@ import { RecommendPage } from "./pages/RecommendPage";
 import { ComparePage } from "./pages/ComparePage";
 import { AdminPage } from "./pages/AdminPage";
 import "./App.css";
+import "./styles/Theme.css";
 
 function App() {
  const [user, setUser] = useState(() => {

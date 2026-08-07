@@ -3,76 +3,78 @@ import "../styles/Dashboard.css";
 
 export function DashboardPage({ user }) {
   const navigate = useNavigate();
-
   const features = [
     {
-      id: 1,
-      title: "📊 Phân Tích Cảm Xúc",
-      description: "Phân tích cảm xúc từ các đánh giá sản phẩm trên Tiki/Shopee",
-      icon: "😊",
+      id: "01",
+      eyebrow: "Voice of customer",
+      title: "Đọc cảm xúc đánh giá",
+      description: "Biến hàng trăm nhận xét thành tín hiệu tích cực, tiêu cực và mức độ tin cậy dễ đọc.",
       path: "/sentiment",
-      color: "#3498db",
+      meta: "BiLSTM · Tiki reviews",
     },
     {
-      id: 2,
-      title: "🎯 Gợi Ý Sản Phẩm",
-      description: "Nhận gợi ý sản phẩm tương tự dựa trên phân loại",
-      icon: "🔍",
+      id: "02",
+      eyebrow: "Product discovery",
+      title: "Tìm sản phẩm phù hợp",
+      description: "Phân loại sản phẩm và đề xuất lựa chọn liên quan từ dữ liệu danh mục thực tế.",
       path: "/recommend",
-      color: "#e74c3c",
+      meta: "Category model · Similarity",
     },
     {
-      id: 3,
-      title: "So Sanh San Pham",
-      description: "Nhap 2 link Tiki de tao API lay du lieu so sanh",
-      icon: "SS",
+      id: "03",
+      eyebrow: "Decision support",
+      title: "Đặt hai sản phẩm lên bàn cân",
+      description: "Đối chiếu khác biệt, ưu điểm và khuyến nghị trước khi đưa ra quyết định mua.",
       path: "/compare",
-      color: "#16a34a",
+      meta: "Tiki API · Structured compare",
     },
   ];
 
   return (
     <div className="dashboard-container">
-      <div className="welcome-section">
-        <h2>👋 Xin chào, {user?.username}!</h2>
-        <p>Chọn một tính năng để bắt đầu</p>
-      </div>
-
-      <div className="features-grid">
-        {features.map((feature) => (
-          <div
-            key={feature.id}
-            className="feature-card"
-            style={{ borderLeft: `4px solid ${feature.color}` }}
-            onClick={() => navigate(feature.path)}
-          >
-            <div className="feature-icon">{feature.icon}</div>
-            <h3>{feature.title}</h3>
-            <p>{feature.description}</p>
-            <button className="feature-btn">
-              Sử dụng →
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="stats-section">
-        <h3>📈 Thống Kê Sử Dụng</h3>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">0</div>
-            <div className="stat-label">Lần phân tích</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">0</div>
-            <div className="stat-label">Lần gợi ý</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">0</div>
-            <div className="stat-label">Yêu thích</div>
-          </div>
+      <section className="welcome-section">
+        <div className="welcome-copy">
+          <span className="page-kicker">Bàn phân tích / hôm nay</span>
+          <h2>Chào {user?.username},<br />bạn muốn hiểu sản phẩm theo hướng nào?</h2>
+          <p>Mỗi công cụ biến dữ liệu mua sắm thành một quyết định rõ ràng hơn.</p>
         </div>
-      </div>
+        <div className="signal-display" aria-label="Hệ thống sẵn sàng">
+          <span className="signal-status"><i /> Hệ thống sẵn sàng</span>
+          <div className="signal-chart" aria-hidden="true">
+            {[24, 38, 31, 54, 46, 70, 62, 84, 72, 94].map((height, index) => (
+              <i key={index} style={{ height: `${height}%` }} />
+            ))}
+          </div>
+          <small>Luồng dữ liệu trực tiếp</small>
+        </div>
+      </section>
+
+      <section className="features-grid" aria-label="Công cụ phân tích">
+        {features.map((feature) => (
+          <article key={feature.id} className="feature-card" onClick={() => navigate(feature.path)}>
+            <div className="feature-index">{feature.id}</div>
+            <div className="feature-card-copy">
+              <span>{feature.eyebrow}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+              <small>{feature.meta}</small>
+            </div>
+            <button className="feature-btn" aria-label={`Mở ${feature.title}`}>Mở công cụ <span>↗</span></button>
+          </article>
+        ))}
+      </section>
+
+      <section className="stats-section">
+        <div className="stats-heading">
+          <span className="page-kicker">Nhật ký sử dụng</span>
+          <h3>Hoạt động trong phiên</h3>
+        </div>
+        <div className="stats-grid">
+          <div className="stat-card"><span className="stat-number">00</span><span className="stat-label">Phân tích cảm xúc</span></div>
+          <div className="stat-card"><span className="stat-number">00</span><span className="stat-label">Lượt gợi ý</span></div>
+          <div className="stat-card"><span className="stat-number">00</span><span className="stat-label">Lượt so sánh</span></div>
+        </div>
+      </section>
     </div>
   );
 }

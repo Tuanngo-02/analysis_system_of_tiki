@@ -1,0 +1,8 @@
+# Rasa must use a separate Python 3.10 environment because its dependency
+# constraints conflict with the FastAPI/TensorFlow application environment.
+rasa==3.6.21
+rasa-sdk==3.6.2
+pandas<2.2
+numpy<1.25
+sentence-transformers>=2.2,<3
+faiss-cpu>=1.7,<2

@@ -1,12 +1,12 @@
-import os
 import re
 import requests
 import pickle
+from pathlib import Path
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.layers import Attention
+from tensorflow.keras.layers import Attention, Dense, Embedding
 
 # Fix Attention cho Keras bản mới
 class FixedAttention(Attention):
@@ -16,9 +16,28 @@ class FixedAttention(Attention):
             config["score_mode"] = "dot"
         return cls(**config)
 
+
+class CompatibleEmbedding(Embedding):
+    """Load H5 models saved by Keras versions that emit quantization metadata."""
+
+    @classmethod
+    def from_config(cls, config):
+        config = dict(config)
+        config.pop("quantization_config", None)
+        return cls(**config)
+
+
+class CompatibleDense(Dense):
+    @classmethod
+    def from_config(cls, config):
+        config = dict(config)
+        config.pop("quantization_config", None)
+        return cls(**config)
+
 # Khởi tạo model và tokenizer (Singleton pattern để không load lại nhiều lần)
-MODEL_PATH = 'app/model/model_sentiment/bilstm_sentiment.h5'
-TOKENIZER_PATH = 'app/model/model_sentiment/tokenizer.pkl'
+ASSET_DIR = Path(__file__).resolve().parents[1] / "model" / "model_sentiment"
+MODEL_PATH = ASSET_DIR / "bilstm_sentiment.h5"
+TOKENIZER_PATH = ASSET_DIR / "tokenizer.pkl"
 
 _model = None
 _tokenizer = None
@@ -28,7 +47,11 @@ def get_model():
     if _model is None:
         _model = keras.models.load_model(
             MODEL_PATH,
-            custom_objects={'Attention': FixedAttention},
+            custom_objects={
+                'Attention': FixedAttention,
+                'Embedding': CompatibleEmbedding,
+                'Dense': CompatibleDense,
+            },
             compile=False
         )
     return _model

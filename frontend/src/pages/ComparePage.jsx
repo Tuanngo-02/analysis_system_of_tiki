@@ -310,7 +310,6 @@ export function ComparePage() {
   };
 
   const compareData = compareResult?.compareData;
-  const rawData = compareResult?.raw;
   const comparisonPoints = normalizeList(
     compareData?.comparison_points || compareData?.differences
   );
@@ -375,8 +374,8 @@ export function ComparePage() {
               <div className="compare-result-content">
                 <ComparisonTable
                   items={comparisonPoints}
-                  product1Label="Sản Phẩm 1"
-                  product2Label="Sản Phẩm 2"
+                  product1Label={product1Label}
+                  product2Label={product2Label}
                 />
 
                 <div className="compare-advantages-grid">

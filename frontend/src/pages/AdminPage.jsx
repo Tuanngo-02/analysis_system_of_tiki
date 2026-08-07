@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "../styles/Admin.css";
 
-export function AdminPage({ user }) {
+export function AdminPage() {
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -13,7 +13,7 @@ export function AdminPage({ user }) {
     },
   ]);
 
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     total_users: 1,
     active_users: 1,
     total_analyses: 0,

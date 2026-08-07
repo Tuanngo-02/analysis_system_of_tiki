@@ -1,5 +1,5 @@
-& .\env\Scripts\Activate.ps1
+& ..\env\Scripts\Activate.ps1
 
 Write-Host "Starting TeachWork Backend..."
 
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload

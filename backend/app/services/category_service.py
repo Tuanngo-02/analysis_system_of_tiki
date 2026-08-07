@@ -20,10 +20,13 @@ except Exception:
 
 try:
     from tensorflow.keras.models import load_model
+    from tensorflow.keras.layers import Dense, Embedding
     from tensorflow.keras.preprocessing.sequence import pad_sequences
     _TF_OK = True
 except Exception:
     load_model = None
+    Embedding = None
+    Dense = None
     pad_sequences = None
     _TF_OK = False
 
@@ -41,6 +44,30 @@ class _Cache:
 
 
 _cache = _Cache()
+
+
+if Embedding is not None:
+    class CompatibleEmbedding(Embedding):
+        """Ignore Keras quantization metadata unsupported by legacy H5 loading."""
+
+        @classmethod
+        def from_config(cls, config):
+            config = dict(config)
+            config.pop("quantization_config", None)
+            return cls(**config)
+else:
+    CompatibleEmbedding = None
+
+
+if Dense is not None:
+    class CompatibleDense(Dense):
+        @classmethod
+        def from_config(cls, config):
+            config = dict(config)
+            config.pop("quantization_config", None)
+            return cls(**config)
+else:
+    CompatibleDense = None
 
 
 def _find_modelcategory_file(filename: str) -> Path:
@@ -71,7 +98,14 @@ def _load_assets() -> None:
         tokenizer_path = _find_modelcategory_file(TOKENIZER_FILENAME)
         label_encoder_path = _find_modelcategory_file(LABEL_ENCODER_FILENAME)
 
-        _cache.model = load_model(str(model_path))
+        _cache.model = load_model(
+            str(model_path),
+            custom_objects={
+                "Embedding": CompatibleEmbedding,
+                "Dense": CompatibleDense,
+            },
+            compile=False,
+        )
         _cache.tokenizer = joblib.load(str(tokenizer_path))
         _cache.label_encoder = joblib.load(str(label_encoder_path))
     except Exception:

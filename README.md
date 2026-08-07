@@ -1,275 +1,252 @@
-# 📊 Smart Analytics System
+# Commerce Signal — Phân tích và hỗ trợ lựa chọn sản phẩm
 
-## Hệ Thống Phân Tích Cảm Xúc và Gợi Ý Sản Phẩm
+Commerce Signal là ứng dụng web full-stack giúp người mua xử lý lượng lớn thông tin trên sàn thương mại điện tử trước khi đưa ra quyết định. Thay vì phải đọc thủ công hàng trăm đánh giá và mở nhiều trang sản phẩm để đối chiếu, người dùng chỉ cần cung cấp đường dẫn Tiki; hệ thống sẽ phân tích cảm xúc, nhận diện danh mục, đề xuất sản phẩm liên quan và hỗ trợ so sánh hai lựa chọn.
 
-Một ứng dụng web full-stack với các chức năng phân tích cảm xúc từ đánh giá sản phẩm và gợi ý sản phẩm tương tự. Hệ thống hỗ trợ hai vai trò: Admin (quản lý người dùng) và User (sử dụng tính năng phân tích).
+> Đồ án tập trung vào việc đưa các mô hình machine learning vào một luồng sản phẩm hoàn chỉnh: thu thập dữ liệu, suy luận bằng mô hình đã huấn luyện, cung cấp REST API và trình bày kết quả trên giao diện React.
 
----
+## Bài toán dự án giải quyết
 
-## 🚀 Các Tính Năng Chính
+Người mua hàng trực tuyến thường gặp ba vấn đề:
 
-### ✨ Cho Người Dùng (User)
-- **📊 Phân Tích Cảm Xúc**: Phân tích cảm xúc từ đánh giá sản phẩm (Positive/Negative/Neutral)
-- **🎯 Gợi Ý Sản Phẩm**: Nhận gợi ý các sản phẩm tương tự dựa trên phân loại
-- **👤 Quản Lý Tài Khoản**: Đăng nhập, đăng ký tài khoản
-- **📈 Dashboard**: Xem thống kê sử dụng
+- Có quá nhiều đánh giá, khó nhận biết cảm nhận chung về sản phẩm.
+- Khó tìm các lựa chọn tương tự hoặc bổ trợ trong cùng nhóm nhu cầu.
+- Thông số và ưu điểm của hai sản phẩm nằm rải rác, khó so sánh trực tiếp.
 
-### ⚙️ Cho Quản Trị Viên (Admin)
-- **👥 Quản Lý Người Dùng**: Thêm, xóa, kích hoạt/vô hiệu người dùng
-- **📊 Thống Kê Hệ Thống**: Xem tổng quan các chỉ số quan trọng
-- **🔐 Quản Lý Quyền**: Phân quyền giữa Admin và User
-- **ℹ️ Thông Tin Hệ Thống**: Xem trang thái hoạt động của hệ thống
+Commerce Signal gom những tác vụ đó vào một không gian làm việc thống nhất. Kết quả được trình bày theo hướng hỗ trợ quyết định, thay vì chỉ trả về dữ liệu hoặc xác suất thô từ mô hình.
 
----
+## Chức năng
 
-## 📋 Yêu Cầu Hệ Thống
+Dự án hiện có **6 nhóm chức năng**:
 
-- Python 3.8+
-- Node.js 14+ (cho frontend)
-- npm hoặc yarn
+| # | Chức năng | Mô tả |
+|---|---|---|
+| 1 | Xác thực người dùng | Đăng ký, đăng nhập, mã hóa mật khẩu và cấp JWT theo vai trò `user`/`admin`. |
+| 2 | Phân tích cảm xúc | Thu thập đánh giá từ link sản phẩm Tiki và phân loại từng đánh giá bằng mô hình BiLSTM. |
+| 3 | Nhận diện danh mục | Dự đoán danh mục từ tên sản phẩm bằng mô hình phân loại đã huấn luyện. |
+| 4 | Gợi ý sản phẩm | Kết hợp danh mục, TF-IDF và cosine similarity để tìm sản phẩm liên quan từ dữ liệu cục bộ. |
+| 5 | So sánh hai sản phẩm | Tạo nguồn dữ liệu từ hai link Tiki, nhận kết quả so sánh có cấu trúc và hiển thị khác biệt, ưu điểm, khuyến nghị. Luồng hiện tích hợp n8n. |
+| 6 | Quản trị hệ thống | Giao diện tổng quan, thống kê và quản lý trạng thái người dùng theo vai trò admin. |
 
----
+Chatbot tư vấn bằng Rasa được giữ dưới dạng module mở rộng trong `backend/chatbot`
 
-## ⚙️ Cài Đặt và Chạy
+## Demo
 
-## 🎯 Chạy Ứng Dụng
-## Tạo env
-```bash
-pip install -r requirements.txt
-```
-### Terminal 1 - Backend
+### 1. Đăng nhập
 
-```bash
-cd backend
-.\dev
-```
+![Màn hình đăng nhập](docs/images/login.png)
 
-✅ Khi thấy dòng này, backend đã chạy:
-```
-INFO:     Application startup complete
-INFO:     Uvicorn running on http://127.0.0.1:8000
-```
+### 2. Dashboard
 
-### Terminal 2 - Frontend
+![Dashboard tổng quan](docs/images/main.png)
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 3. Phân tích cảm xúc
 
-✅ Khi thấy dòng này, frontend đã chạy:
-```
-VITE v8.0.10  ready in XXX ms
+![Kết quả phân tích cảm xúc](docs/images/sentiment.png)
 
-➜  Local:   http://localhost:5173/
-```
+### 4. Gợi ý sản phẩm
 
----
+![Danh sách sản phẩm được gợi ý](docs/images/recommendation.png)
 
-## 🔐 Tài Khoản Mặc Định
+### 5. So sánh sản phẩm
 
-Khi lần đầu chạy, hệ thống sẽ tự động tạo tài khoản admin:
+![Kết quả so sánh hai sản phẩm](docs/images/comparison.png)
 
-**Admin Account:**
-- **Username**: `admin`
-- **Email**: `admin@example.com`
-- **Password**: `admin123`
-- **Role**: Admin
+### 6. Trang quản trị
 
-**Để tạo tài khoản Admin thủ công** (nếu cần):
+![Trang quản trị hệ thống](docs/images/admin.png)
 
-1. Mở Python shell trong thư mục backend:
-```bash
-python
+## Kiến trúc tổng quan
+
+```text
+Người dùng
+    │
+    ▼
+React + Vite (localhost:5173)
+    │ REST API
+    ▼
+FastAPI (localhost:8000)
+    ├── Authentication ── SQLite / SQLAlchemy / JWT
+    ├── Sentiment ─────── BiLSTM + Keras tokenizer
+    ├── Category ──────── BiLSTM + label encoder
+    ├── Recommendation ── Pandas + TF-IDF + cosine similarity
+    └── Comparison ────── Tiki Product API + n8n callback
 ```
 
-2. Chạy các lệnh sau:
-```python
-from app.core.database import SessionLocal, Base, engine
-from app.model.user_model import User
-from app.services.auth_service import hash_password
+Backend sử dụng cơ chế lazy loading cho các model để tránh nạp lại tài nguyên sau mỗi request. Dữ liệu người dùng được lưu trong SQLite; dữ liệu sản phẩm và review phục vụ gợi ý được lưu dưới dạng CSV.
 
-# Tạo tables
-Base.metadata.create_all(bind=engine)
-
-# Tạo session
-db = SessionLocal()
-
-# Tạo admin user
-admin_user = User(
-    username="admin",
-    email="admin@example.com",
-    hashed_password=hash_password("admin123"),
-    role="admin"
-)
-db.add(admin_user)
-db.commit()
-print("Admin user created successfully!")
-```
-
----
-
-## 📱 Hướng Dẫn Sử Dụng
-
-### Cho Người Dùng (User)
-
-1. **Đăng Ký Tài Khoản**
-   - Nhấp vào "Đăng ký ngay" trên trang login
-   - Nhập username, email, và password
-   - Xác nhận mật khẩu
-   - Nhấp "Đăng Ký"
-
-2. **Đăng Nhập**
-   - Nhập username và password
-   - Nhấp "Đăng Nhập"
-
-3. **Phân Tích Cảm Xúc**
-   - Chọn "Sentiment" từ menu
-   - Nhập URL sản phẩm (Tiki/Shopee)
-   - Nhấp "Phân Tích"
-   - Xem kết quả: cảm xúc, độ tin cậy, số đánh giá, rating
-
-4. **Gợi Ý Sản Phẩm**
-   - Chọn "Recommend" từ menu
-   - Nhập URL sản phẩm
-   - Nhấp "Tìm Gợi Ý"
-   - Xem danh sách sản phẩm được gợi ý
-
-### Cho Quản Trị Viên (Admin)
-
-1. **Đăng Nhập Admin**
-   - Đăng nhập với tài khoản admin
-   - Tự động chuyển đến Admin Panel
-
-2. **Quản Lý Người Dùng**
-   - Xem danh sách tất cả người dùng
-   - Thêm người dùng mới: Nhấp "Thêm Người Dùng"
-   - Vô hiệu/Kích hoạt người dùng: Nhấp biểu tượng 🔒/🔓
-   - Xóa người dùng: Nhấp biểu tượng 🗑️
-
-3. **Xem Thống Kê**
-   - Tổng người dùng
-   - Người dùng hoạt động
-   - Tổng phân tích
-   - Trạng thái hệ thống
-
----
-
-## 🗄️ Cấu Trúc Cơ Sở Dữ Liệu
-
-### Bảng Users
-```
-- id: Integer (Primary Key)
-- username: String (Unique)
-- email: String (Unique)
-- hashed_password: String
-- role: String (admin/user)
-- is_active: Boolean
-- created_at: DateTime
-```
-
----
-
-## 🔌 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Đăng ký tài khoản
-- `POST /api/auth/login` - Đăng nhập
-
-### Features
-- `POST /api/sentiment` - Phân tích cảm xúc
-- `POST /api/recommend` - Gợi ý sản phẩm
-
----
-
-## 🛠️ Công Nghệ Sử Dụng
-
-### Backend
-- **FastAPI**: Framework web hiệu suất cao
-- **SQLAlchemy**: ORM cho database
-- **Pydantic**: Validation dữ liệu
-- **Passlib + Bcrypt**: Mã hóa mật khẩu
-- **PyJWT**: JWT token authentication
-- **SQLite**: Database nhẹ
+## Công nghệ sử dụng
 
 ### Frontend
-- **React 19**: UI library
-- **React Router DOM**: Navigation
-- **CSS**: Styling
 
----
+- React 19
+- React Router
+- Vite
+- CSS thuần với responsive layout
 
-## 📊 Dữ Liệu Mẫu
+### Backend
 
-Sau khi tạo tài khoản Admin, bạn có thể:
+- FastAPI và Uvicorn
+- SQLAlchemy và SQLite
+- Pydantic
+- JWT, Passlib và Bcrypt
 
-1. **Đăng nhập bằng Admin** để truy cập Admin Panel
-2. **Tạo tài khoản User mới** thông qua:
-   - Admin Panel > Thêm Người Dùng
-   - Hoặc tự đăng ký trên trang Register
+### Machine learning và xử lý dữ liệu
 
-3. **Thử nghiệm các tính năng**:
-   - Phân tích cảm xúc: Sử dụng URL sản phẩm thực từ Tiki/Shopee
-   - Gợi ý sản phẩm: Nhập URL sản phẩm để nhận gợi ý
+- TensorFlow/Keras
+- BiLSTM
+- Pandas và NumPy
+- Scikit-learn
+- TF-IDF và cosine similarity
+- Beautiful Soup và Tiki API
 
----
+## Cấu trúc thư mục
 
-## ⚠️ Lưu Ý Quan Trọng
-
-1. **Database**: Ứng dụng sử dụng SQLite (`app.db`), tự động tạo khi chạy lần đầu
-2. **CORS**: Đã bật cho phép frontend gọi API từ localhost
-3. **Token**: Access token hết hạn sau 30 phút
-4. **Password**: Tối thiểu 6 ký tự khi đăng ký
-
----
-
-## 🐛 Khắc Phục Sự Cố
-
-### Backend không chạy
-```bash
-# Kiểm tra port 8000 có bị chiếm không
-# Hoặc chạy trên port khác:
-python -m uvicorn app.main:app --reload --port 8001
+```text
+Commerce-Signal/
+├── backend/
+│   ├── app/
+│   │   ├── core/              # Database và cấu hình nền tảng
+│   │   ├── model/             # Model dữ liệu và model sentiment
+│   │   ├── modelcategory/     # Model phân loại danh mục
+│   │   ├── routes/            # REST API endpoints
+│   │   ├── schemas/           # Pydantic schemas
+│   │   ├── services/          # Business logic và ML inference
+│   │   └── main.py            # FastAPI entrypoint
+│   ├── chatbot/               # Module Rasa tùy chọn
+│   ├── app.db                 # SQLite database
+│   └── requirements.txt
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── styles/
+│   └── package.json
+├── requirements.txt
+└── README.md
 ```
 
-### Frontend không kết nối được backend
-- Kiểm tra URL backend trong `src/services/api.js`
-- Đảm bảo backend đang chạy tại `http://localhost:8000`
+## Cài đặt và chạy dự án
 
-### Database bị lỗi
-```bash
-# Xóa file database và chạy lại
-rm backend/app.db
+### Yêu cầu
+
+- Windows 10/11 và PowerShell
+- **Python 3.9 64-bit** — không dùng Python 3.13 vì một số dependency ML chưa tương thích
+- Node.js 18 trở lên
+- npm
+
+### 1. Clone dự án
+
+```powershell
+git clone <repository-url>
+cd <repository-folder>
+```
+
+### 2. Tạo môi trường và cài backend
+
+Chạy tại thư mục gốc của dự án:
+
+```powershell
+python -m venv env
+.\env\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Nếu máy có nhiều phiên bản Python, hãy chỉ định Python 3.9:
+
+```powershell
+py -3.9 -m venv env
+```
+
+### 3. Cài frontend
+
+```powershell
+cd frontend
+npm.cmd install
+cd ..
+```
+
+### 4. Chạy backend
+
+Mở terminal thứ nhất:
+
+```powershell
+cd backend
+.\dev.ps1
+```
+
+Hoặc chạy thủ công:
+
+```powershell
+cd backend
+..\env\Scripts\Activate.ps1
 python -m uvicorn app.main:app --reload
 ```
 
----
+Backend và tài liệu API:
 
-## 📞 Hỗ Trợ
+- API: <http://localhost:8000>
+- Swagger UI: <http://localhost:8000/docs>
+- ReDoc: <http://localhost:8000/redoc>
 
-Nếu gặp vấn đề, vui lòng:
-1. Kiểm tra logs trong terminal
-2. Xem API docs tại `http://localhost:8000/docs`
-3. Kiểm tra Network tab trong browser developer tools
+### 5. Chạy frontend
 
----
+Mở terminal thứ hai:
 
-## 📄 License
+```powershell
+cd frontend
+npm.cmd run dev
+```
 
-MIT License - Tự do sử dụng cho mục đích cá nhân và thương mại
+Truy cập ứng dụng tại <http://localhost:5173>.
 
----
+## Tài khoản demo
 
-## 🎯 Phát Triển Tiếp Theo
+Tài khoản admin được tự động tạo khi backend khởi động lần đầu:
 
-- [ ] Lưu trữ lịch sử phân tích
-- [ ] Export kết quả thành PDF
-- [ ] Biểu đồ thống kê chi tiết
-- [ ] Gợi ý sản phẩm thông minh hơn
-- [ ] Multi-language support
-- [ ] Mobile app version
+```text
+Username: admin
+Password: admin123
+```
 
----
+Thông tin này chỉ dành cho môi trường local/demo. Khi triển khai thực tế cần chuyển mật khẩu mặc định và `SECRET_KEY` sang biến môi trường.
 
-**Được tạo với ❤️ bằng React, FastAPI, và SQLAlchemy**
+## Kiểm tra chất lượng
+
+Kiểm tra frontend:
+
+```powershell
+cd frontend
+npm.cmd run lint
+npm.cmd run build
+```
+
+Kiểm tra dependency backend:
+
+```powershell
+.\env\Scripts\python.exe -m pip check
+```
+
+## Lưu ý về tính năng so sánh
+
+Luồng so sánh hiện gửi hai Tiki Product API sang workflow n8n. Workflow cần trả JSON về endpoint:
+
+```text
+POST /api/compare/receive
+```
+
+Payload kết quả được frontend nhận diện qua các trường:
+
+```json
+{
+  "comparison_points": [],
+  "product_1_advantages": [],
+  "product_2_advantages": [],
+  "recommendation": ""
+}
+```
+
+Nếu n8n chạy bên ngoài máy local, backend cần được public qua domain hoặc tunnel để workflow gọi được endpoint callback.
+

@@ -1,10 +1,11 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
+from pathlib import Path
 
 # Database URL - sử dụng SQLite để đơn giản
-DATABASE_URL = "sqlite:///./app.db"
+DATABASE_PATH = Path(__file__).resolve().parents[2] / "app.db"
+DATABASE_URL = f"sqlite:///{DATABASE_PATH.as_posix()}"
 
 engine = create_engine(
     DATABASE_URL, 
